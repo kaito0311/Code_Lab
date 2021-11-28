@@ -1,27 +1,41 @@
-from scipy import optimize
-from scipy.sparse.linalg.eigen.arpack.arpack import ArpackNoConvergence
-from scipy.stats import norm
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sb
-from scipy.optimize import minimize
-np.random.seed(1) 
-# Creating the distribution
-#Visualizing the distribution
+import tensorflow as tf
 
-# def ackley(x):
-#     A = 10
-#     sum = x[1] * 2 - x[0] * 3 + 1
-#     return sum 
+x = tf.Variable(3, name='x', trainable=True, dtype=tf.float32)
+with tf.GradientTape(persistent=True) as t:
+    # log_x = tf.math.log(x)
+    # y = tf.math.square(log_x)
+    y = (x - 1) ** 2
 
-# x = np.random.rand((2))
-# y = np.zeros((2))
-# optimize = minimize(ackley, x, bounds = ((0,1), (0,1)))
-# print(optimize)
-# print(ackley(optimize.x))
-# print(ackley(y))
+opt = tf.optimizers.Adam(learning_rate=0.001)
 
-y = 3
 
-x = 5 if y > 3 else 4 
-print(x) 
+def get_gradient(x0):
+    # this works
+    x.assign(x0)
+    with tf.GradientTape(persistent=True) as t:
+        y = (x - 1) ** 2
+    return t.gradient(y, [x])
+
+
+#### Option 2
+def b(x0, tol=1e-8, max_iter=10000):
+    x.assign(x0)
+    # To use minimize you have to define your loss computation as a funcction
+    def compute_loss():
+        log_x = tf.math.log(x)
+        y = tf.math.square(log_x)
+        return y
+    err = np.Inf # step error (banach), not actual erro
+    i = 0
+    while err > tol:
+        x0 = x.numpy()
+        train = opt.minimize(compute_loss, var_list=[x])
+        err = np.abs(x.numpy() - x0)
+        print(err, x.numpy())
+        i += 1
+        if i > max_iter:
+            print(f'stopping at max_iter={max_iter}')
+            return x.numpy()
+    print(f'stopping at err={err}<{tol}')
+    return x.numpy()

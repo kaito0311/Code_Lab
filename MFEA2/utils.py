@@ -7,8 +7,9 @@ from scipy.stats import norm
 
 
 class sphere_function:
-    def __init__(self, dimension):
+    def __init__(self, dimension, delta =0):
         self.dimension = dimension
+        self.delta = delta 
 
     def decode(self, array_value):
         array_value = array_value[:self.dimension]
@@ -18,7 +19,7 @@ class sphere_function:
         x = self.decode(array_value)
         # print(array_value.shape)
         # print(array_va)
-        x = x - 200
+        x = x - self.delta
         sum = np.sum(x * x, keepdims=True)
         return float(sum)
 
@@ -31,7 +32,6 @@ class rastrigin_function:
     def decode(self, array_value):
         array_value = array_value[:self.dimension]
         return np.array(array_value)
-
     def calculate_fitness(self, array_value):
         x = self.decode(array_value)
         sum = self.A * self.dimension + \
@@ -169,9 +169,8 @@ def learn_probabilistic_model_v2(population, skill_factor):
     for task in range(number_task): 
         u[task] = np.mean(subpopulation[task], axis = 0, keepdims= True) 
         std[task] = np.std(subpopulation[task], axis =0, keepdims = True) 
-
         pro_model[task] = compute_gauss_density_v2(u[task], std[task], population) 
-    
+
     return pro_model
 
 def convert_1D_to_matrix(variable, number_task, diagonal_value=0):
@@ -225,15 +224,29 @@ def optimize_rmp(variable, g, population, scalar_fitness, skill_factor):
     # print(count)
     variable = convert_matrix_to_1D(rmp, number_task)
     result = np.sum(np.sum(np.log(gc)))
-    print("variable: " , variable)
+    # print("variable: " , variable)
     
     # print(result) 
     # result = -result;
     return -result
 
 
-def choose_parent(number_population):
-    parent = (choice(np.arange(number_population), size=(2)))
+def choose_parent(number_subpopulation, scalar_fitness, number_child, skill_factor):
+    """
+    Chon cha me o 1/2 phía trên
+    Arguments: 
+        number_subpopulation: so luong ca the o moi quan the con. Shape(N, 1) 
+        scalar_fitness: scalar_fitness cho quan the cha me. Shape(number_subpopulation * number_task, 1) 
+        number_child: so luong child da tao o moi task. shape(number_task,1)
+    Returns:
+        2 ca the cha me 
+    """
+
+    top_parent = np.where(scalar_fitness >= 2.0 / number_subpopulation)[0]
+
+    index_parent_not_enough_child = np.where(number_child[skill_factor[top_parent]] < number_subpopulation)[0] 
+    parent = np.random.choice(top_parent[index_parent_not_enough_child], size= (2))
+    
     return parent
 
 
