@@ -17,23 +17,22 @@ class sphere_function:
 
     def calculate_fitness(self, array_value):
         x = self.decode(array_value)
-        # print(array_value.shape)
-        # print(array_va)
         x = x - self.delta
         sum = np.sum(x * x, keepdims=True)
         return float(sum)
 
-
 class rastrigin_function:
-    def __init__(self, dimension, A=10):
+    def __init__(self, dimension, A=10, delta = 0):
         self.dimension = dimension
         self.A = A
+        self.delta = delta 
 
     def decode(self, array_value):
         array_value = array_value[:self.dimension]
         return np.array(array_value)
     def calculate_fitness(self, array_value):
         x = self.decode(array_value)
+        x = x - self.delta
         sum = self.A * self.dimension + \
             np.sum(x * x) - self.A * np.sum(np.cos(2 * np.pi * np.cos(x)))
         return float(sum)
@@ -81,25 +80,6 @@ def compute_scalar_fitness(population, skill_factor):
                            ] = 1.0 / float(1.0 + order)
 
     return scalar_fitness
-
-
-def compute_gauss_density(mean, cov, x, task, skill_factor):
-    """
-    mean: shape (1, dimension) 
-    cov : shape (dimension, dimension) 
-    x: shape (number """
-    # print(x.shape)
-    number_population, _ = x.shape 
-    # mean = np.reshape(mean, (1, dimension))
-    xsuat = 0.0
-    f = np.zeros((x.shape[0])) 
-    for i in range(number_population):
-        # print(x[i].T) 
-        f[i] = multivariate_normal.pdf(x[i].T, mean, cov)
-        if(skill_factor[i] == task):
-            xsuat += f[i]
-    
-    return f
 
 
 def learn_probabilistic_model(population, skill_factor):
@@ -154,7 +134,6 @@ def learn_probabilistic_model_v2(population, skill_factor):
     task_index = np.zeros(number_task, dtype = int) 
 
     u = np.zeros((number_task, dimension), dtype = float) 
-
     std = np.zeros((number_task, dimension), dtype = float) 
 
     subpopulation = np.zeros( shape = (number_task, int(number_population/number_task), dimension), dtype= float) 
@@ -221,13 +200,9 @@ def optimize_rmp(variable, g, population, scalar_fitness, skill_factor):
                 (0.5 / number_task) * \
                 (np.sum(np.multiply(rmp[k], g.T[individual])))
 
-    # print(count)
     variable = convert_matrix_to_1D(rmp, number_task)
-    result = np.sum(np.sum(np.log(gc)))
-    # print("variable: " , variable)
-    
-    # print(result) 
-    # result = -result;
+    result = np.sum(np.sum(np.log(gc+ 1e-10)))
+
     return -result
 
 
@@ -325,7 +300,7 @@ def create_child_v2(parent1, parent2, skill_factor, population, rmp):
         child1 = poly_mutation(child1)
         child2 = poly_mutation(child2) 
         skill_factor_child[1] = skill_factor_child[0] = skill_factor[p2] 
-    
+
     return child1, child2, skill_factor_child[0], skill_factor_child[1] 
 
         
@@ -335,32 +310,7 @@ def find_individual_same_skill( skill_factor, individual):
     result = np.random.choice(a.flatten())
 
     return int(result)
-
-
-def different_evolution(xj_parent0, xj_parent1, F = 0.8):
-    return xj_parent0 + F * (xj_parent0 - xj_parent1) 
-
-def intra_task_crossover(parent, population, skill_factor, tasks):
-    parent1 = parent
-    while parent1 == parent and skill_factor[parent] != skill_factor[parent1]: 
-        parent1 = choice(np.arange(len(population)), size = 1)
-
-    _, dimensions = population.shape 
-    child = np.copy(population[parent])
-    for dimension in range(dimensions):
-        child[dimension] =  different_evolution(parent[dimension], parent1[dimension])
-        if tasks[skill_factor[parent]].calculate_fitness(child) < tasks[skill_factor[parent]].calculate_fitness(population[parent]):
-            population[parent][dimension] = child[dimension] 
-        else: 
-            child[dimension] = population[parent][dimension] 
-    return child
-
-
-
-def inter_task_crossover(parent0, parent1, population, skill_factor):
-    child1, child2 = sbx_crossover(population[parent0], population[parent1])
-    return child1, child2 
-     
+ 
 
 def evaluate_child(childs, tasks, skill_factor_child):
     number_child = len(skill_factor_child)
@@ -373,7 +323,7 @@ def evaluate_child(childs, tasks, skill_factor_child):
 
 
 def update(population, number_population, skill_factor, scalar_fitness, factorial_cost):
-    temp = np.argpartition(-scalar_fitness, number_population)
+    temp = np.argsort(-scalar_fitness)
     result_index = temp[:number_population]
     delete_index = []
     for i in range(len(population)):
@@ -389,3 +339,19 @@ def update(population, number_population, skill_factor, scalar_fitness, factoria
     assert (len(population) == number_population)
 
     return population, skill_factor, scalar_fitness, factorial_cost
+
+def optimize_result(population, skill_factor, factorial_cost, tasks):
+    class result: 
+        def __init__(self, cost = 100000, task = -1):
+            self.cost = cost 
+            self.task = task 
+    
+    results = [result(task=i) for i in range(np.max(skill_factor) + 1)]
+
+    for i in range(len(population)):
+        if results[skill_factor[i]].cost > factorial_cost[i] :
+            results[skill_factor[i]].cost = factorial_cost[i] 
+    # for result in results: 
+    #     print("tasks: {} | cost: {} ".format(result.task, result.cost))
+    
+    return results

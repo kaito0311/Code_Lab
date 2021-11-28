@@ -1,18 +1,19 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
 from scipy.optimize import minimize
+from tqdm import trange 
 
 LOWER_BOUND = 0
 UPPER_BOUND = 1
-NUMBER_SUBPOPULATION = 50
-NUMBER_TASK = 3
+NUMBER_SUBPOPULATION = 100
+NUMBER_TASK = 4
 DIMENSIONS = 30
 MFEA_VERSION = 2
 NUMBER_CHILD = NUMBER_SUBPOPULATION * NUMBER_TASK
 NUMBER_POPULATON = NUMBER_SUBPOPULATION * NUMBER_TASK
-LOOP = 50
+LOOP = 500
+
 np.random.seed(1)
 
 
@@ -22,7 +23,7 @@ def mfea2():
         NUMBER_SUBPOPULATION, NUMBER_TASK, DIMENSIONS, LOWER_BOUND, UPPER_BOUND)
 
     # Number task
-    tasks = [sphere_function(dimension=20, delta= 0.2),sphere_function(dimension=20, delta= 0.1),rastrigin_function(dimension=20)]
+    tasks = [sphere_function(dimension=25, delta= 0.3),sphere_function(dimension=20, delta= 0.3),sphere_function(dimension=30, delta= 0.1),rastrigin_function(dimension=30, delta = 0.3)]
     assert (len(tasks) == NUMBER_TASK)
 
     # Initial Population
@@ -36,7 +37,7 @@ def mfea2():
     # element of rmp matrix will be changed
     variable = np.random.rand(int(NUMBER_TASK * (NUMBER_TASK - 1) / 2))
     RMP = convert_1D_to_matrix(variable, NUMBER_TASK)
-    print(RMP)
+    # print(RMP)
     # Bounds for rmp
     x = (0.0, 1.0)
     bounds = []
@@ -46,11 +47,13 @@ def mfea2():
 
     # mfea2
     history = []
-    while count < LOOP:
+    iterator = trange(LOOP)
+
+    for count in iterator:
 
         if MFEA_VERSION == 1:
             RMP = np.zeros((NUMBER_TASK, NUMBER_TASK), dtype=float)
-            RMP = RMP + 0.0
+            RMP = RMP + 0.3
         else:
             pro_model_for_parent = learn_probabilistic_model_v2(
                 population, skill_factor)
@@ -66,6 +69,7 @@ def mfea2():
         factorial_cost_child = np.zeros_like(factorial_cost)
         count_child = 0
         number_child = np.zeros((NUMBER_TASK), dtype=int)
+
         while count_child < NUMBER_SUBPOPULATION*NUMBER_TASK:
 
             parent0, parent1 = choose_parent(
@@ -77,7 +81,7 @@ def mfea2():
             number_child[task0] += 1
             number_child[task1] += 1
             count_child += 2
-
+        
         factorial_cost_child = evaluate_child(child, tasks, skill_factor_child)
 
         population = np.concatenate((population, child))
@@ -85,17 +89,31 @@ def mfea2():
         factorial_cost = np.concatenate((factorial_cost, factorial_cost_child))
         scalar_fitness = compute_scalar_fitness(factorial_cost, skill_factor)
 
+        # population = child 
+        # skill_factor = skill_factor_child
+        # factorial_cost = factorial_cost_child
+        # scalar_fitness=  compute_scalar_fitness(factorial_cost, skill_factor)
+
         population, skill_factor, scalar_fitness, factorial_cost = update(population, NUMBER_POPULATON, skill_factor,
                                                                           scalar_fitness, factorial_cost)
         count += 1
-        print(count) 
+        dem = 0 
+        for i in variable: 
+            dem += 1 
+        if (dem < NUMBER_TASK):
+            dem = 0
+        results = optimize_result(population, skill_factor, factorial_cost, tasks)
+        iterator.set_description("loop: {} / {} || tasks : {} || cost {}".format(count, LOOP, {task.task for task in results}, {result.cost for result in results}) )
         # print(pro_model_for_parent)
 
-    print(factorial_cost)
-    print(skill_factor)
-    plt.plot(np.arange(LOOP), history)
-    plt.show()
+    if MFEA_VERSION == 2:  
+        optimize_result(population, skill_factor, factorial_cost, tasks)
+        _, bieudo = plt.subplots(1,variable.shape[0], figsize= (5,5))
+        for i in range(variable.shape[0]):
+            bieudo[i].plot(np.arange(LOOP), [x[i] for x in history])
+        
+        plt.show()
 
 
-for i in range(10):
+for i in range(1):
     mfea2() 
