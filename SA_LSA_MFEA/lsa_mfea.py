@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from utils_mf import *
-from utils_sa_lsa import *
+from utils.utils_sa_lsa import *
 from config import * 
 from tqdm import trange
 np.random.seed(0)
@@ -30,8 +29,10 @@ def lsa_mfea(tasks, lsa = True):
     
     skill_factor = np.zeros((np.sum(initial_size_population)), dtype=int)
     factorial_cost = np.zeros((np.sum(initial_size_population)), dtype=float)
+
     skill_factor, factorial_cost = generate_population(
         population, tasks, np.sum(initial_size_population))
+
     scalar_fitness = compute_scalar_fitness(factorial_cost, skill_factor)
 
     
@@ -41,13 +42,14 @@ def lsa_mfea(tasks, lsa = True):
     history_rmp = [[] for i in range(NUMBER_RMPS)]
     
 
-    iterator = trange(LOOP) 
+    iterator = trange(LOOP*2) 
 
 
     # while np.sum(evaluations) < MAXEVALS:
     for dem in iterator:
         if np.sum(evaluations) >= MAXEVALS: 
             break 
+
         S = [[] for i in range(NUMBER_RMPS)]
         xichma = [[] for i in range(NUMBER_RMPS)]
 
@@ -59,21 +61,23 @@ def lsa_mfea(tasks, lsa = True):
         count_rmp = np.zeros(NUMBER_RMPS)
 
         count = 0
-        while count < np.sum(current_size_population) and np.sum(evaluations) < MAXEVALS:
+        while count < np.sum(current_size_population):
 
-            parent = choose_parent(maxEvals, scalar_fitness, evaluations, skill_factor)
-            if parent is None:
+            # chọn ra 2 index parent
+            index_parents = choose_parent(maxEvals, scalar_fitness, evaluations, skill_factor)
+            if index_parents is None:
                 break
 
-            index = index_convert_matrix_to_1D(skill_factor[parent[0]], skill_factor[parent[1]], len(tasks))
+            index = index_convert_matrix_to_1D(skill_factor[index_parents[0]], skill_factor[index_parents[1]], len(tasks))
             generate_rmp = history_memories[index].random_Gauss()
 
-            generate_rmps[index].append(generate_rmp)
-            count_rmp[index] += 1 
+            if(skill_factor[index_parents[0]] != skill_factor[index_parents[1]]):
+
+                generate_rmps[index].append(generate_rmp)
+                count_rmp[index] += 1 
             
-            child, skf_child, \
-            fac_cost_child, S, xichma = create_child_v3(
-                                        population, parent, skill_factor, \
+            child, skf_child, fac_cost_child, S, xichma = create_child_lsa_sa(
+                                        population, index_parents, skill_factor, \
                                         generate_rmp, S, \
                                         xichma, tasks)
 
@@ -99,7 +103,8 @@ def lsa_mfea(tasks, lsa = True):
         
 
         for i in range(NUMBER_RMPS):
-            history_rmp[i].append(np.sum(generate_rmps[i])/ count_rmp[i])
+            if count_rmp[i] > 0:
+                history_rmp[i].append(np.sum(generate_rmps[i])/ count_rmp[i])
         # For visual
         # print(history_memories[1].M)
         history_memories = Update_Success_History_Memory(
@@ -127,15 +132,15 @@ def lsa_mfea(tasks, lsa = True):
         population, skill_factor, scalar_fitness, factorial_cost = update(population, current_size_population, \
                                                                     skill_factor, scalar_fitness, factorial_cost)
 
-        
-        results = optimize_result(population, skill_factor, factorial_cost, tasks)
-        history_cost.append(results)
-                                    
+        if int(evaluations[0] / 100) > len(history_cost):
+            results = optimize_result(population, skill_factor, factorial_cost, tasks)
+            history_cost.append(results)
+            iterator.set_description(f"{[results[i].cost for i in range(NUMBER_TASKS)]}  {[evaluations[k] for k in range(NUMBER_TASKS)]}")
+               
         assert len(population) == np.sum(current_size_population)
 
-        if dem > LOOP :
-            break 
-        dem += 1
+        # if dem > LOOP :
+        #     break 
     
     
     for i in range(NUMBER_TASKS):
