@@ -1,6 +1,6 @@
 import numpy as np 
 
-def sbx_crossover(p1, p2, nc = 2):
+def sbx_crossover(p1, p2, nc = 2, swap = True):
     SBXDI = nc
     D = p1.shape[0]
     cf = np.empty([D])
@@ -14,7 +14,8 @@ def sbx_crossover(p1, p2, nc = 2):
 
     c1 = np.clip(c1, 0, 1)
     c2 = np.clip(c2, 0, 1)
-    c1, c2 = variable_swap(c1,c2, 0.5)
+    if swap is True: 
+        c1, c2 = variable_swap(c1,c2, 0.5)
 
     return c1, c2
 
@@ -50,39 +51,24 @@ def poly_mutation(p, pmdi=5):
     r = np.random.uniform(size=[p.shape[0]])
     tmp = np.copy(p)
     for i in range(p.shape[0]):
+        v = 0
         if r[i] < mp:
             if u[i] < 0.5:
                 delta = (2*u[i]) ** (1/(1+pmdi)) - 1
-                tmp[i] = p[i] + delta * p[i]
+                v = p[i] + delta * p[i]
             else:
                 delta = 1 - (2 * (1 - u[i])) ** (1/(1+pmdi))
-                tmp[i] = p[i] + delta * (1 - p[i])
-    if(max(tmp) >1):
-        print("hmmm")
+                v = p[i] + delta * (1 - p[i])
+        if v > 1: 
+            print("hmmmmm")
+            tmp[i] = tmp[i] + np.random.rand() * (1 - tmp[i]) 
+        elif  v < 0: 
+            print("ầy")
+            tmp[i] = tmp[i] * np.random.rand(); 
+
     tmp = np.clip(tmp, 0, 1)
 
     return tmp 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

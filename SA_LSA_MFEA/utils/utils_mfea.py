@@ -52,6 +52,7 @@ def create_child_mfea(parent1, parent2, skill_factor, population, rmp):
 
     return child1, child2, skill_factor_child[0], skill_factor_child[1] 
 def create_child_mfea1(parent1, parent2, skill_factor, population, rmp):
+
     skill_factor_child = np.zeros((2), dtype= int)
     child1 = child2 = None 
     if(skill_factor[parent1] == skill_factor[parent2]):
@@ -74,6 +75,7 @@ def create_child_mfea1(parent1, parent2, skill_factor, population, rmp):
 
     child1 = poly_mutation(child1)
     child2 = poly_mutation(child2) 
+    
     return child1, child2, skill_factor_child[0], skill_factor_child[1] 
 
 def choose_parent(number_subpopulation, scalar_fitness, number_child, skill_factor):
@@ -87,7 +89,7 @@ def choose_parent(number_subpopulation, scalar_fitness, number_child, skill_fact
         2 ca the cha me 
     """
 
-    top_parent = np.where(scalar_fitness >= 0.5)[0]
+    top_parent = np.where(scalar_fitness >0)[0]
 
     index_parent_not_enough_child = np.where(number_child[skill_factor[top_parent]] < number_subpopulation)[0] 
     parent = np.random.choice(top_parent[index_parent_not_enough_child], size= (2))

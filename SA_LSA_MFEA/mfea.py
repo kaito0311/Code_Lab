@@ -2,8 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from tqdm import trange
-from utils.utils_model_mfea import create_population, generate_population, compute_scalar_fitness, evaluate_child, optimize_result
-from utils.utils_mfea import choose_parent, create_child_mfea1, update_constant_subpop, create_child_mfea
+from utils.utils_model_mfea import (
+    create_population,
+    generate_population,
+    compute_scalar_fitness,
+    evaluate_child,
+    optimize_result,
+)
+from utils.utils_mfea import (
+    choose_parent,
+    create_child_mfea1,
+    update_constant_subpop,
+    create_child_mfea,
+)
 from config import *
 
 np.random.seed(0)
@@ -64,23 +75,29 @@ def mfea(tasks):
             number_child[skill_factor_child[1]] += 1
             count_child += 2
 
-
-        
         factorial_cost_child = evaluate_child(child, tasks, skill_factor_child)
         population = np.concatenate((population, child))
         skill_factor = np.concatenate((skill_factor, skill_factor_child))
         factorial_cost = np.concatenate((factorial_cost, factorial_cost_child))
         scalar_fitness = compute_scalar_fitness(factorial_cost, skill_factor)
 
-        population, skill_factor, scalar_fitness, factorial_cost = update_constant_subpop(
-            population, NUMBER_POPULATON, skill_factor, scalar_fitness, factorial_cost)
+        (
+            population,
+            skill_factor,
+            scalar_fitness,
+            factorial_cost,
+        ) = update_constant_subpop(
+            population, NUMBER_POPULATON, skill_factor, scalar_fitness, factorial_cost
+        )
 
         count += 1
         results = optimize_result(population, skill_factor, factorial_cost, tasks)
         history_cost.append(results)
 
         # iterator.set_description("loop: {} / {} : {} ||".format(count, LOOP))
-        iterator.set_description(f"loop: {count} / {LOOP} : {[results[i].cost for i in range(NUMBER_TASKS)]} ||")
+        iterator.set_description(
+            f"loop: {count} / {LOOP} : {[results[i].cost for i in range(NUMBER_TASKS)]} ||"
+        )
 
     for i in range(NUMBER_TASKS):
         print(results[i].cost)

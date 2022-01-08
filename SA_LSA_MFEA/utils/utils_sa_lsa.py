@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import size
 
 from utils.operators import * 
 from utils.utils_model_mfea import * 
@@ -16,19 +17,20 @@ def index_convert_matrix_to_1D(task1, task2, number_task):
 
 
 class Memory:
-    def __init__(self, H=5, varience=0.1):
+    def __init__(self, H=5, sigma=0.1):
         self.H = H
         self.index = 0
-        self.varience = varience
+        self.sigma = sigma
         self.M = np.zeros((H), dtype=float) + 0.5
 
     def random_Gauss(self):
         mean = np.random.choice(self.M)
         # rmp_sampled = np.random.normal(loc=mean, scale=self.varience)
         # mu + sigma * Math.sqrt(-2.0 * Math.log(rand.nextDouble())) * Math.sin(2.0 * Math.PI * rand.nextDouble());
-        rmp_sampled = mean + self.varience * np.sqrt(-2.0 * np.log(np.random.rand())) * np.sin(2.0 * np.pi * np.random.rand())
-        if rmp_sampled < 0:
-            return 0
+        rmp_sampled = 0
+        while rmp_sampled <= 0:
+            rmp_sampled = mean + self.sigma * np.sqrt(-2.0 * np.log(np.random.uniform())) * np.sin(2.0 * np.pi * np.random.uniform())
+
         if rmp_sampled > 1:
             return 1
         return rmp_sampled
@@ -62,17 +64,23 @@ def choose_parent(number_subpopulation, scalar_fitness, number_child, skill_fact
     """
 
     top_parent = np.where(scalar_fitness > 0)[0]
-    index_parent_not_enough_child = np.where(
-        number_child[skill_factor[top_parent]]
-        < number_subpopulation[skill_factor[top_parent]]
-    )[0]
-    if len(index_parent_not_enough_child) == 0:
-        return None
-    parent = np.random.choice(top_parent[index_parent_not_enough_child], size=(2))
+    a = np.arange(int(len(skill_factor)/2))
+    np.random.shuffle(a)
+    parent0 = int(np.random.choice(a, size = (1)))
+    # index_parent_not_enough_child = np.where(
+    #     number_child[skill_factor[top_parent]]
+    #     < number_subpopulation[skill_factor[top_parent]]
+    # )[0]
+    # if len(index_parent_not_enough_child) == 0:
+    #     return None
+    # parent = np.random.choice(top_parent[index_parent_not_enough_child], size=(2))
+    parent = int(np.random.choice(np.arange(len(skill_factor)), size= (1)))
+    return [parent0, parent]
 
-    return parent
-
-
+def choose_parent(list_population):
+    parent0 = int(np.random.choice(list_population[:int(len(list_population)/2)], size= (1)))
+    parent1 = int(np.random.choice(list_population, size= (1)))
+    return[parent0, parent1] 
 
 def compute_beta_for_sbx(u, nc=2):
     if u < 0.5:
@@ -157,36 +165,56 @@ def create_child_lsa_sa(population, parent, skill_factor, rmp, S, xichma, tasks)
     factorial_cost_child = np.zeros((2), dtype=float)
 
     if skill_factor[parent[0]] == skill_factor[parent[1]]:
-        childs[0], childs[1] = sbx_crossover( population[parent[0]], population[parent[1]])
+        childs[0], childs[1] = sbx_crossover( population[parent[0]], population[parent[1]], swap= True)
 
-        # childs[0], childs[1] = variable_swap(childs[0], childs[1], 0.5)
         childs[0] = poly_mutation(childs[0])
         childs[1] = poly_mutation(childs[1])
+
         skill_factor_child[0] = skill_factor_child[1] = skill_factor[parent[0]]
 
         factorial_cost_child[0] = tasks[skill_factor_child[0]].calculate_fitness(childs[0])
         factorial_cost_child[1] = tasks[skill_factor_child[1]].calculate_fitness(childs[1])
     else:
-        r = np.random.rand()
+        r = np.random.uniform()
 
         if r < rmp:
-            childs[0], childs[1] = sbx_crossover(
-                population[parent[0]], population[parent[1]]
-            )
-            # childs[0], childs[1] = variable_swap(childs[0], childs[1], 0.5)
+            childs[0], childs[1] = sbx_crossover(population[parent[0]], population[parent[1]],swap=False)
+            
             skill_factor_child[0] = int(np.random.choice(skill_factor[parent]))
             skill_factor_child[1] = int(np.random.choice(skill_factor[parent]))
+
         else:
+            # parent0 = find_individual_same_skill(skill_factor, parent[0])
+            # child1, child2 = sbx_crossover(population[parent[0]], population[parent0])
+            # if tasks[skill_factor[parent[0]]].calculate_fitness(child1) < tasks[skill_factor[parent[0]]].calculate_fitness(child2) :
+            #     childs[0] = np.copy(child1)
+            # else :
+            #     childs[0] = np.copy(child2)
+
+            # parent1 = find_individual_same_skill(skill_factor, parent[1])
+            # child1, child2 = sbx_crossover(population[parent[1]], population[parent1])
+            # if tasks[skill_factor[parent[1]]].calculate_fitness(child1) < tasks[skill_factor[parent[1]]].calculate_fitness(child2) :
+            #     childs[1] = np.copy(child1) 
+            # else :
+            #     childs[1] = np.copy(child2) 
+            
+            # skill_factor_child[0] = skill_factor[parent[0]]
+            # skill_factor_child[1] = skill_factor[parent[1]]
+            #==============================================
             parent0 = find_individual_same_skill(skill_factor, parent[0])
             childs[0], _ = sbx_crossover(population[parent[0]], population[parent0])
 
             parent1 = find_individual_same_skill(skill_factor, parent[1])
             childs[1], _ = sbx_crossover(population[parent1], population[parent[1]])
 
-            # childs[0], childs[1] = variable_swap(childs[0], childs[1], 0.5)
-
             skill_factor_child[0] = skill_factor[parent[0]]
             skill_factor_child[1] = skill_factor[parent[1]]
+
+            #================================ 
+            # p0 = find_individual_same_skill(skill_factor, parent[0])
+            # childs[0], childs[1] = sbx_crossover(population[parent[0]], population[p0], swap= True) 
+            # skill_factor_child[0] = skill_factor_child[1] = skill_factor[parent[0]] 
+            
 
         childs[0] = poly_mutation(childs[0])
         childs[1] = poly_mutation(childs[1])
@@ -234,7 +262,7 @@ def Update_Success_History_Memory(M, S, xichma, number_tasks):
         while j < number_tasks:
             index = index_convert_matrix_to_1D(i, j, number_tasks)
             if len(S[index]) != 0:
-                M[index].update_M(np.sum(np.array(xichma[index]) * np.array(S[index])**2) / (1e-10 + np.sum(np.array(xichma[index]) * np.array(S[index]))))
+                M[index].update_M(np.sum(np.array(xichma[index]) * np.array(S[index])**2) / (1e-50 + np.sum(np.array(xichma[index]) * np.array(S[index]))))
             j += 1
     return M
 

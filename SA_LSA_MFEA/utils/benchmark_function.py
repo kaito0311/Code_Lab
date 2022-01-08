@@ -235,7 +235,7 @@ def getManyTasks10():
     tasks.append(Rosenbrock(matrix, bias, dim, lower= -50, upper = 50))
 
     # task 6 
-
+    dim = 50 
     matrix = np.eye(dim) 
     bias = np.zeros(dim) + 40
     tasks.append(Ackley(matrix, bias, dim, -50, 50))
@@ -253,12 +253,14 @@ def getManyTasks10():
     tasks.append(Schewefel(matrix, bias, dim, -500, 500))
 
     # tasks 9 
+    dim = 50
     bias = np.zeros(dim) 
     bias[:int(dim/2)] += -80 
     bias[int(dim/2):] += 80 
     tasks.append(Girewank(matrix, bias, dim, lower=-100, upper=100))
 
     # task 10 
+    dim = 50 
     bias = np.zeros(dim) 
     bias[:int(dim/2)] += 40 
     bias[int(dim/2):] += -40 
