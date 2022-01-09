@@ -123,7 +123,8 @@ def lsa_mfea(tasks, lsa=True):
                 fcost_ob = tasks[skf_ob].calculate_fitness(ob)
             else:
                 list_generate_rmp[skill_factor[index_pa]][skill_factor[index_pb]].append(rmp)
-                if np.random.uniform() < rmp:
+                r = np.random.uniform()
+                if r < rmp:
                     oa, ob = sbx_crossover(
                         population[index_pa], population[index_pb], swap= False
                     )
@@ -145,7 +146,8 @@ def lsa_mfea(tasks, lsa=True):
                     skf_oa = skill_factor[index_pa]
                     skf_ob = skill_factor[index_pb]
 
-                delta = 0
+                delta1 = 0
+                delta2 = 0
 
 
                 
@@ -154,21 +156,41 @@ def lsa_mfea(tasks, lsa=True):
 
                 if skf_oa == skill_factor[index_pa]:
                     fcost_pa = tasks[skill_factor[index_pa]].calculate_fitness(population[index_pa])
-                    delta = np.max([delta, (fcost_pa - fcost_oa)/ (fcost_pa + 1e-10)])
+                    delta1 = np.max([delta1, (fcost_pa - fcost_oa)/ (fcost_pa + 1e-10)])
                 else:
                     fcost_pb = tasks[skill_factor[index_pb]].calculate_fitness(population[index_pb])
-                    delta = np.max([delta, (fcost_pb - fcost_oa) /(fcost_pb + 1e-10)])
+                    delta1 = np.max([delta1, (fcost_pb - fcost_oa) /(fcost_pb + 1e-10)])
 
                 if skf_ob == skill_factor[index_pa]:
                     fcost_pa = tasks[skill_factor[index_pa]].calculate_fitness(population[index_pa])
-                    delta = np.max([delta, (fcost_pa - fcost_ob)/ (fcost_pa + 1e-10)])
+                    delta2 = np.max([delta2, (fcost_pa - fcost_ob)/ (fcost_pa + 1e-10)])
                 else:
                     fcost_pb = tasks[skill_factor[index_pb]].calculate_fitness(population[index_pb])
-                    delta = np.max([delta, (fcost_pb - fcost_ob) /(fcost_pb + 1e-10)])
+                    delta2 = np.max([delta2, (fcost_pb - fcost_ob) /(fcost_pb + 1e-10)])
 
-                if delta > 0:
+                # if delta > 0:
+                #     S[skill_factor[index_pa]][skill_factor[index_pb]].append(rmp)
+                #     sigma[skill_factor[index_pa]][skill_factor[index_pb]].append(delta)
+
+
+                if delta1 > 0 or delta2 > 0: 
                     S[skill_factor[index_pa]][skill_factor[index_pb]].append(rmp)
-                    sigma[skill_factor[index_pa]][skill_factor[index_pb]].append(delta)
+                    sigma[skill_factor[index_pa]][skill_factor[index_pb]].append(np.max([delta1, delta2]))
+
+                    if r < rmp: 
+                        # add hai con vao skill_factor child 
+                        index_oc = int(list(set(np.where(scalar_fitness == 1.0)[0]) & set(np.where(skill_factor == skill_factor[index_pa])[0]))[0])
+                        index_od = int(list(set(np.where(scalar_fitness == 1.0)[0]) & set(np.where(skill_factor == skill_factor[index_pb])[0]))[0])
+                        # index_od = np.where(scalar_fitness == 1.0 and skill_factor == skill_factor[index_pb])
+                        # print(index_od)
+                        if delta2 > 0:
+                            childs.append(population[index_oc]) 
+                            skill_factor_childs.append(skill_factor[index_pb])
+                            factorial_cost_childs.append(tasks[skill_factor[index_pb]].calculate_fitness(population[index_oc]))
+                        if delta1 > 0:
+                            childs.append(population[index_od]) 
+                            skill_factor_childs.append(skill_factor[index_pa])
+                            factorial_cost_childs.append(tasks[skill_factor[index_pa]].calculate_fitness(population[index_od]))
 
             evaluations[skf_oa] += 1
             evaluations[skf_ob] += 1
@@ -184,6 +206,7 @@ def lsa_mfea(tasks, lsa=True):
 
         M_rmp = Update_History_Memory(M_rmp, S, sigma, len(tasks))
 
+        #NOTE
         if lsa is True:
             current_size_population = Linear_population_size_reduction(
                 evaluations,
