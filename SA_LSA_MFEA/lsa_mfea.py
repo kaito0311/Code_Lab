@@ -73,7 +73,7 @@ def lsa_mfea(tasks, lsa=True):
     )
 
     skill_factor = skill_factor_best_task(population, tasks)
-    
+
     factorial_cost = cal_factor_cost(population, tasks, skill_factor)
 
     scalar_fitness = compute_scalar_fitness(factorial_cost, skill_factor)
@@ -100,8 +100,8 @@ def lsa_mfea(tasks, lsa=True):
         generate_rmps = [[] for i in range(NUMBER_RMPS)]
         count_rmp = np.zeros(NUMBER_RMPS)
 
-        count = 0
-        while count < np.sum(current_size_population):
+        number_childs = 0
+        while number_childs < np.sum(current_size_population):
             list_population = np.arange(len(population))
             np.random.shuffle(list_population)
             index_parents = choose_parent(list_population)
@@ -126,12 +126,6 @@ def lsa_mfea(tasks, lsa=True):
                 population, index_parents, skill_factor, generate_rmp, S, xichma, tasks
             )
 
-            # for i in range(2):
-            #     childs.append(child[i])
-            #     if len(np.array(childs).shape) == 1:
-            #         print("hmmm")
-            #     skill_factor_childs.append(skf_child[i])
-            #     factorial_cost_childs.append(fac_cost_child[i])
             evaluations[skf_child[0]] += 1
             evaluations[skf_child[1]] += 1
             if len(childs) == 0:
@@ -145,7 +139,7 @@ def lsa_mfea(tasks, lsa=True):
                     [factorial_cost_childs, fac_cost_child]
                 )
 
-            count += 2
+            number_childs += 2
 
         for i in range(NUMBER_RMPS):
             if count_rmp[i] > 0:

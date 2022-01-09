@@ -88,57 +88,7 @@ def compute_beta_for_sbx(u, nc=2):
     else:
         return np.power(1.0 / (2.0 * (1 - u)), 1.0 / (nc + 1))
 
-# def sbx_crossover(parent1, parent2):
-    
-#     rand = np.random.rand(len(parent1))
-#     beta = np.zeros_like(rand) 
-#     # for i in range(len(rand)):
-#     #     beta[i] = compute_beta_for_sbx(rand[i])
-#     nc = 2 
-#     beta = np.where(rand <= 0.5, np.power(2.0 * rand, 1.0 / float(nc + 1)), np.power(1.0 / (2.0 * (1 - rand)), 1.0 / (nc + 1)))
 
-#     child1 = 0.5 * ((1.0 + beta) * parent1 + (1.0 - beta) * parent2)
-#     child2 = 0.5 * ((1.0 - beta) * parent1 + (1.0 + beta) * parent2)
-
-#     child1, child2 = np.clip(child1, 0, 1), np.clip(child2, 0, 1)
-#     return child1, child2
-
-
-# def find_individual_same_skill(skill_factor, individual):
-#     a = np.array(np.where(skill_factor == skill_factor[individual]))
-#     result = np.random.choice(a.flatten())
-
-#     return int(result)
-
-
-# def poly_mutation(parent, nm=5):
-#     # child = np.copy(parent) 
-
-#     # for i in range(len(parent)):
-#     #     if(random.random() < 1.0 / len(parent)):
-#     #         u = random.random()
-#     #         r = 1 - np.power(2.0 * (1.0 - u), 1.0 / (nm + 1.0))
-#     #         l = np.power(2.0 * u, 1.0 / (nm + 1.0)) - 1
-#     #         # p = 1.0 / float(len(parent))
-#     #         if u <= 0.5:
-#     #             child[i] = parent[i] + l * parent[i]
-#     #         else:
-#     #             child[i] = parent[i] + r * (1 - parent[i])
-#     #     if(child[i] > 1):
-#     #          child[i] = parent[i] + random.random()* (1 - parent[i]) 
-#     #     elif child[i] < 0: 
-#     #         child[i] = parent[i]* random.random() 
-#     # return child
-
-#     child = np.copy(parent)
-#     u = np.random.rand(len(parent))
-#     r = 1 - np.power(2.0 * (1.0 - u), 1.0 / (nm + 1.0))
-#     l = np.power(2.0 * u, 1.0 / (nm + 1.0)) - 1
-#     rand = np.random.rand(len(parent))
-#     a = np.where(u <= 0.5,parent *(1+l), parent + r * (1-parent))
-#     child = np.where(rand < 1.0/len(parent), a, parent)
-
-#     return child
 
 def create_child_lsa_sa(population, parent, skill_factor, rmp, S, xichma, tasks):
 
