@@ -59,9 +59,6 @@ def lsa_mfea(tasks, lsa=True):
     evaluations = np.zeros((NUMBER_TASKS), dtype=int)
     maxEvals = np.zeros_like(evaluations, dtype=int) + int(MAXEVALS / NUMBER_TASKS)
 
-    skill_factor = np.zeros((np.sum(initial_size_population)), dtype=int)
-    factorial_cost = np.zeros((np.sum(initial_size_population)), dtype=float)
-
     population = create_population(
         np.sum(initial_size_population), DIMENSIONS, LOWER_BOUND, UPPER_BOUND
     )
@@ -98,24 +95,17 @@ def lsa_mfea(tasks, lsa=True):
         while len(childs) < np.sum(current_size_population):
             index_pa = int(np.random.choice(list_population[: int(len(list_population) / 2)], size=(1)))
             index_pb = int(np.random.choice(list_population[int(len(list_population) / 2) :], size=(1)))
-            # index_pa = int(np.random.choice(np.where(scalar_fitness > 0.5)[0], size= 1))
-            # index_pb = index_pa 
-            # while index_pb == index_pa: 
-            #     # index_pb = int(np.random.choice(list_population, size= 1))
-            #     index_pb = int(np.random.choice(np.where(scalar_fitness > 0.5)[0], size= 1))
-            #     # index_pa = int(np.random.choice(scalar_fitness > 0.5, size= 1))
-
-            if skill_factor[index_pa] > skill_factor[index_pb]:
-                tmp = index_pa
-                index_pa = index_pb
-                index_pb = tmp
 
             rmp = M_rmp[skill_factor[index_pa]][skill_factor[index_pb]].random_Gauss()
             fcost_oa = None 
             fcost_ob = None
+            
             if skill_factor[index_pa] == skill_factor[index_pb]:
                 oa, ob = sbx_crossover(population[index_pa], population[index_pb])
                 skf_oa = skf_ob = skill_factor[index_pa]
+                #ANCHOR: NEW 
+                # oa = Gauss_mutation(oa) 
+                # ob= Gauss_mutation(ob) 
 
                 fcost_oa = tasks[skf_oa].calculate_fitness(oa)
                 fcost_ob = tasks[skf_ob].calculate_fitness(ob)
@@ -130,18 +120,23 @@ def lsa_mfea(tasks, lsa=True):
                     skf_oa, skf_ob = np.random.choice(
                         skill_factor[[index_pa, index_pb]], size=2
                     )
+                    #ANCHOR
 
                 else:
-                    pa1 = find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pa)
-                    # pa1 = find_individual_same_skill(skill_factor, index_pa)
+                    # pa1 = find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pa)
+                    pa1 = find_individual_same_skill(skill_factor, index_pa)
                     oa, _ = sbx_crossover(population[pa1], population[index_pa])
 
-                    # pb1 = find_individual_same_skill(skill_factor, index_pb)
-                    pb1= find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pb)
+                    pb1 = find_individual_same_skill(skill_factor, index_pb)
+                    # pb1= find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pb)
                     ob, _ = sbx_crossover(population[pb1], population[index_pb])
 
                     skf_oa = skill_factor[index_pa]
                     skf_ob = skill_factor[index_pb]
+                    # oa = Gauss_mutation(oa) 
+                    # ob= Gauss_mutation(ob) 
+
+                    #ANCHOR
 
                 delta1 = 0
                 delta2 = 0
@@ -171,22 +166,23 @@ def lsa_mfea(tasks, lsa=True):
                 if delta1 > 0 or delta2 > 0: 
                     S[skill_factor[index_pa]][skill_factor[index_pb]].append(rmp)
                     sigma[skill_factor[index_pa]][skill_factor[index_pb]].append(np.max([delta1, delta2]))
+                    
 
-                    # if r < rmp: 
-                    #     # add hai con vao skill_factor child 
-                    #     index_oc = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 0.75)[0]) & set(np.where(skill_factor == skill_factor[index_pa])[0])))), size= (1)))
-                    #     index_od = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 0.75)[0]) & set(np.where(skill_factor == skill_factor[index_pb])[0])))), size= (1)))
-                    #     # index_od = int(list(set(np.where(scalar_fitness == 1.0)[0]) & set(np.where(skill_factor == skill_factor[index_pb])[0]))[0])
-                    #     # index_od = np.where(scalar_fitness == 1.0 and skill_factor == skill_factor[index_pb])
-                    #     # print(index_od)
-                    #     if delta2 > 0:
-                    #         childs.append(population[index_oc]) 
-                    #         skill_factor_childs.append(skill_factor[index_pb])
-                    #         factorial_cost_childs.append(tasks[skill_factor[index_pb]].calculate_fitness(population[index_oc]))
-                    #     if delta1 > 0:
-                    #         childs.append(population[index_od]) 
-                    #         skill_factor_childs.append(skill_factor[index_pa])
-                    #         factorial_cost_childs.append(tasks[skill_factor[index_pa]].calculate_fitness(population[index_od]))
+                    if r < rmp: 
+                        # add hai con vao skill_factor child 
+                        index_oc = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 0.75)[0]) & set(np.where(skill_factor == skill_factor[index_pa])[0])))), size= (1)))
+                        index_od = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 0.75)[0]) & set(np.where(skill_factor == skill_factor[index_pb])[0])))), size= (1)))
+                        # index_od = int(list(set(np.where(scalar_fitness == 1.0)[0]) & set(np.where(skill_factor == skill_factor[index_pb])[0]))[0])
+                        # index_od = np.where(scalar_fitness == 1.0 and skill_factor == skill_factor[index_pb])
+                        # print(index_od)
+                        if delta2 > 0:
+                            childs.append(population[index_oc]) 
+                            skill_factor_childs.append(skill_factor[index_pb])
+                            factorial_cost_childs.append(tasks[skill_factor[index_pb]].calculate_fitness(population[index_oc]))
+                        if delta1 > 0:
+                            childs.append(population[index_od]) 
+                            skill_factor_childs.append(skill_factor[index_pa])
+                            factorial_cost_childs.append(tasks[skill_factor[index_pa]].calculate_fitness(population[index_od]))
 
             evaluations[skf_oa] += 1
             evaluations[skf_ob] += 1

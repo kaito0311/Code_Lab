@@ -22,9 +22,16 @@ class Memory:
         self.index = 0
         self.sigma = sigma
         self.M = np.zeros((H), dtype=float) + 0.5
+        self.avg_rmp = 0.5 
+    
 
-    def random_Gauss(self):
-        mean = np.random.choice(self.M)
+    def random_Gauss(self, fix= False):
+        #REVIEW
+        if fix:
+            mean = self.avg_rmp
+        else:
+            mean = np.random.choice(self.M)
+
         # rmp_sampled = np.random.normal(loc=mean, scale=self.varience)
         # mu + sigma * Math.sqrt(-2.0 * Math.log(rand.nextDouble())) * Math.sin(2.0 * Math.PI * rand.nextDouble());
         rmp_sampled = 0
@@ -34,9 +41,13 @@ class Memory:
         if rmp_sampled > 1:
             return 1
         return rmp_sampled
-
+    
+    #REVIEW
+    def update_avg_rmp(self, value):
+        self.avg_rmp = (1- 1/10)* self.avg_rmp + (1/10)* value 
     def update_M(self, value):
         self.M[self.index] = value
+        self.update_avg_rmp(value) 
         self.index = (self.index + 1) % self.H
 
 
@@ -228,10 +239,12 @@ def update(population, number_population, skill_factor, scalar_fitness, factoria
         factorical_cost : list of factorial cost
     """
     delete_index = []
+    choose_index = []
 
     for ind in range(len(population)):
         if scalar_fitness[ind] < 1.0 / number_population[skill_factor[ind]]:
             delete_index.append(ind)
+        
 
     # temp = np.argpartition(-scalar_fitness, number_population)
     # result_index = temp[:number_population]

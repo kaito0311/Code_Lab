@@ -1,3 +1,4 @@
+from random import random
 import numpy as np 
 
 def sbx_crossover(p1, p2, nc = 2, swap = True):
@@ -18,6 +19,21 @@ def sbx_crossover(p1, p2, nc = 2, swap = True):
         c1, c2 = variable_swap(c1,c2, 0.5)
 
     return c1, c2
+
+def Gauss_mutation(ind, mean= 0, sigma = 0.001):
+    D = ind.shape[0] 
+    sigma = min(ind) 
+    rand = np.random.normal(size= (D), loc= mean, scale= sigma) 
+    for i in range(D):
+        if(np.random.uniform() < 1.0 / D):
+            t = ind[i] + rand[i] 
+            if(t > 1):
+                t = ind[i] + np.random.uniform() * (1-ind[i]) 
+            elif t < 0:
+                t = np.random.uniform() * ind[i] 
+            ind[i] = t
+    
+    return ind
 
 def variable_swap(p1, p2, probswap):
     D = p1.shape[0]

@@ -41,8 +41,9 @@ class Ackley(function):
         
         avg = sum1/self.dimension 
         avg2 = sum2/self.dimension 
-    
-        return -20 * np.exp(-0.2*np.sqrt(avg)) - np.exp(avg2) + 20 + np.exp(1)
+    #NOTE: FIX
+        return -20 * np.exp(-0.2*np.sqrt(avg)) - np.exp(avg2) + 20 + np.exp(1) - 4.440892098500626e-16
+        # return -20 * np.exp(-0.2*np.sqrt(avg)) - np.exp(avg2) + 20 + np.exp(1)
 
 class Girewank(function):
     def calculate_fitness(self, array_value):
@@ -78,7 +79,9 @@ class Schewefel(function):
         # for i in range(self.dimension): 
         #     sum += x[i] * np.sin(np.sqrt(np.abs(x[i])))
         sum = np.sum(x * np.sin(np.sqrt(np.abs(x))))
-        return 418.9829 * self.dimension - sum 
+        #NOTE: fix 
+        return 418.9828872724336455576189785193 * self.dimension - sum 
+        # return 418.9829 * self.dimension - sum 
         
 
 class Sphere(function):
@@ -183,7 +186,7 @@ def switch_task_CEC(i, matrix, bias, dim, lower, upper):
 
 def getManyTask50():
     tasks = [] 
-    number = 1
+    number = 5
     tasks_size = int(NUMBER_TASKS/number); 
     for index in range(number): 
         dim = 50
@@ -193,7 +196,8 @@ def getManyTask50():
             task_id += 1 
 
             function_id = choice_functions[(task_id -1) % len(choice_functions)]
-            file_dir = "../GECCO/Tasks/benchmark_" + str(index+1); 
+            file_dir = "D:\OneDrive - Hanoi University of Science and Technology\My_self\Work\Lab\Code_Lab\SA_LSA_MFEA\GECCO\Tasks/benchmark_" + str(index+1); 
+            # file_dir = "../GECCO/Tasks/benchmark_" + str(index+1); 
             file_matrix = file_dir + "/matrix_" + str(task_id) 
             file_bias = file_dir + "/bias_" + str(task_id)
             matrix = load_file(file_matrix)

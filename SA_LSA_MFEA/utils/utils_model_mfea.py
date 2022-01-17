@@ -91,6 +91,15 @@ def find_individual_same_skill(skill_factor, individual):
 
     return int(result)
 
+def find_individual_same_skill_ontop(skill_factor, scalar_fitness, individual):
+    a = np.array(np.where(np.array(skill_factor) == skill_factor[individual])[0])
+    ontop = np.array(np.where(np.array(scalar_fitness)[a] >= 0.5, a, None))
+    c = None 
+    while c== None or c== individual:
+        c = np.random.choice(ontop)
+    return c
+
+
 
 def evaluate_child(childs, tasks, skill_factor_child):
     '''
