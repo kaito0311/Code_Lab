@@ -27,11 +27,11 @@ class Memory_SaMTPSO:
         p = SRtk/ np.sum(SRtk) 
         if np.sum(self.success_history).all() < 100 and self.duytri <= 0: 
             self.isFocus = not self.isFocus
-            self.duytri = 10
+            self.duytri = 5
 
         if np.sum(self.success_history).any() > 100 and self.isFocus is True and self.duytri <= 0: 
             self.isFocus = False
-            self.duytri = 10
+            self.duytri = 5
         self.duytri -=1 
         self.next_position_update = (self.next_position_update + 1) % self.LP 
         self.success_history[:, self.next_position_update] = 0

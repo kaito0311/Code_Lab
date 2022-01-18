@@ -132,12 +132,12 @@ def lsa_mfea(tasks, lsa=True):
                     )
 
                 else:
-                    pa1 = find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pa)
-                    # pa1 = find_individual_same_skill(skill_factor, index_pa)
+                    # pa1 = find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pa)
+                    pa1 = find_individual_same_skill(skill_factor, index_pa)
                     oa, _ = sbx_crossover(population[pa1], population[index_pa])
 
-                    # pb1 = find_individual_same_skill(skill_factor, index_pb)
-                    pb1= find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pb)
+                    pb1 = find_individual_same_skill(skill_factor, index_pb)
+                    # pb1= find_individual_same_skill_ontop(skill_factor, scalar_fitness, index_pb)
                     ob, _ = sbx_crossover(population[pb1], population[index_pb])
 
                     skf_oa = skill_factor[index_pa]

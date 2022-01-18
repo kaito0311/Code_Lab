@@ -10,7 +10,7 @@ from utils.utils_sa_lsa import *
 from config import *
 from tqdm import trange
 
-np.random.seed(1)
+# np.random.seed(1)
 
 
 def skill_factor_best_task(pop, tasks):
@@ -61,6 +61,7 @@ def lsa_SaMTPSO(tasks, lsa=True):
 
     evaluations = np.zeros((NUMBER_TASKS), dtype=int)
     maxEvals = np.zeros_like(evaluations, dtype=int) + int(MAXEVALS / NUMBER_TASKS)
+    #include ầmlalgjkafjl
 
     skill_factor = np.zeros((np.sum(initial_size_population)), dtype=int)
     factorial_cost = np.zeros((np.sum(initial_size_population)), dtype=float)
@@ -115,7 +116,7 @@ def lsa_SaMTPSO(tasks, lsa=True):
                         task2 = task 
                         while index_pa == index_pb:
                             # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
-                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 0.75)[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
+                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(3/4 * current_size_population[task2]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
                     
                     # CHỌN CHA MẸ # TRONG BÀI BÁO LÀ CHỌN CON KHỎE NHẤT. 
                     # CROSSOVER 
@@ -181,7 +182,7 @@ def lsa_SaMTPSO(tasks, lsa=True):
         choose_index = [] 
         for ind in range(len(population)):
             #FIXME: THIẾU ĐI CHẤT LƯỢNG KHI THÊM.  
-            if(scalar_fitness[ind]) < 1.0 / current_size_population[skill_factor[ind]]:
+            if scalar_fitness[ind] < 1.0 / current_size_population[skill_factor[ind]]:
                 delete_index.append(ind) 
                 if ind >= index_child_each_tasks[0]:
                     task1 = skill_factor[ind] 
