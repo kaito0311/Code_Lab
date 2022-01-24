@@ -121,12 +121,14 @@ def optimize_result(population, skill_factor, factorial_cost, tasks):
         def __init__(self, cost=1e10, task=-1):
             self.cost = cost
             self.task = task
+            self.ind = None
 
     results = [result(task=i) for i in range(np.max(skill_factor) + 1)]
 
     for i in range(len(population)):
         if results[skill_factor[i]].cost > factorial_cost[i]:
             results[skill_factor[i]].cost = factorial_cost[i]
+            results[skill_factor[i]].ind = population[i] 
     # for result in results:
     #     print("tasks: {} | cost: {} ".format(result.task, result.cost))
 
