@@ -9,8 +9,8 @@ class Memory_SaMTPSO:
         self.fail_history = np.zeros(shape = (number_tasks, LP), dtype= float) 
         self.next_position_update = 0  # index cột đang được update 
         self.isFocus = False 
-        self.epsilon = 1e-20
-        self.pb = 1e-20
+        self.epsilon = 0.001
+        self.pb = 0.001
         self.LP = LP
         self.duytri = 10
         self.number_tasks= number_tasks
@@ -47,7 +47,6 @@ class Memory_SaMTPSO:
         return p
 
     # def compute_prob(self)->np.ndarray: 
-
 
 
 class gauss_mutation:
@@ -101,20 +100,19 @@ class gauss_mutation:
                 w = 1 - fcost[ind_index] / sum_cost 
                 Dt += w * (np.sqrt(np.sum((population[ind_index] - population[best]) ** 2)))
         
-        self.scale = np.zeros_like(self.scale)
+ 
         a = self.D0 / (self.D0 - Dt)
-        self.scale += (a  - 1) 
+        self.tiso = a 
         
 
     def update_scale(self, new_ind, old_ind, newest_cost):
         ind = new_ind - old_ind
-
-        self.scale = self.scale * 0.99 + ind * 0.01 
+        self.scale = self.scale * 0.9 + ind * 0.1 
         if self.loop <= 0: 
-            if self.beforecost - self.cost < 0.1 * self.beforecost : 
+            if self.beforecost - newest_cost < 0.1 * self.beforecost : 
                 self.jam = True 
                 # self.scale = self.scale * 10
-                self.scale = old_ind
+                self.scale = new_ind * 0.1
                 
             else: 
                 self.jam = False 

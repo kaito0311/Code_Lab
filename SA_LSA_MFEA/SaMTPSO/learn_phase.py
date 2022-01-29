@@ -6,8 +6,8 @@ from config import DIMENSIONS
 class DE: 
     def __init__(self) -> None:
         # DE
-        self.Mcr = np.zeros(shape= (30), dtype= float) + 0.5 
-        self.Mf = np.zeros(shape= (30), dtype= float) + 0.5 
+        self.Mcr = np.zeros(shape= (30), dtype= float) + 0.5
+        self.Mf = np.zeros(shape= (30), dtype= float) + 0.5
         self.index_update = 0 
         # cr and r temp 
         self.Scr = [] 
@@ -61,9 +61,9 @@ class DE:
         if delta_fcost > 0: 
             self.rate_improve += delta_fcost 
 
-            self.Scr.append(self.cr_tmp)
-            self.Sf.append(self.f_tmp)
-            self.w.append(delta_fcost)
+            self.Scr.append(float(self.cr_tmp))
+            self.Sf.append(float(self.f_tmp))
+            self.w.append(float(delta_fcost))
         self.func_eval += 1 
     
     def reset(self): 
@@ -72,15 +72,17 @@ class DE:
         new_f = 0 
         new_index = (self.index_update +1) % len(self.Mcr) 
         if len(self.Scr) > 0:
-            for i in range(len(self.Scr)): 
-                new_cr += self.Scr[i] * self.w[i] / sum_w 
-                new_f += self.Sf[i] * self.w[i] / sum_w 
+            # for i in range(len(self.Scr)): 
+            #     new_cr += self.Scr[i] * self.w[i] / sum_w 
+            #     new_f += self.Sf[i] * self.w[i] / sum_w 
+            new_cr = np.sum(np.array(self.Scr) * (np.array(self.w) / sum_w) )
+            new_f = (np.sum(np.array(self.w) * np.array(self.Sf) ** 2)) / (np.sum(np.array(self.w )*np.array(self.Sf)))
             self.Mcr[new_index] = new_cr 
             self.Mf[new_index] = new_f 
             
         else: 
-            self.Mcr[new_index] = self.Mcr[self.index_update]
-            self.Mf[new_index] = self.Mf[self.index_update]
+            self.Mcr[new_index] = np.copy(self.Mcr[self.index_update])
+            self.Mf[new_index] = np.copy(self.Mf[self.index_update])
         
         self.index_update = new_index 
         self.Scr.clear() 

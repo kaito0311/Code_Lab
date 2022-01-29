@@ -124,13 +124,13 @@ def lsa_SaMTPSO(tasks, lsa=True):
                     if memory_task[task].isFocus == False: 
                         task2 = np.random.choice(np.arange(len(tasks)), p= p_matrix[task]) 
                         while index_pa == index_pb:
-                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task2]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
-                            # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
+                            # index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task2]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
+                            index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
                     else: 
                         task2 = task 
                         while index_pa == index_pb:
                             # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
-                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
+                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.75 * current_size_population[task]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
                     
                     # CHỌN CHA MẸ # TRONG BÀI BÁO LÀ CHỌN CON KHỎE NHẤT. 
                     # CROSSOVER 
@@ -280,25 +280,25 @@ def lsa_SaMTPSO(tasks, lsa=True):
         assert len(population) == np.sum(current_size_population)
 
 
-        #ANCHOR: Thêm SHADE 
-        index_population_tasks = [[] for i in range(len(tasks))]
-        for ind in range(len(population)): 
-            index_population_tasks[skill_factor[ind]].append(ind) 
+        # #ANCHOR: Thêm SHADE 
+        # index_population_tasks = [[] for i in range(len(tasks))]
+        # for ind in range(len(population)): 
+        #     index_population_tasks[skill_factor[ind]].append(ind) 
         
-        for subpop in range(len(tasks)):
-            for ind in index_population_tasks[subpop]:
-                pbest= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.1 * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
-                pr1 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
-                pr2 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
+        # for subpop in range(len(tasks)):
+        #     for ind in index_population_tasks[subpop]:
+        #         pbest= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.1 * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
+        #         pr1 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
+        #         pr2 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
 
-                new_ind = de[skill_factor[ind]].DE_cross(population[ind], population[pbest], population[pr1], population[pr2])
+        #         new_ind = de[skill_factor[ind]].DE_cross(population[ind], population[pbest], population[pr1], population[pr2])
 
-                delta_fcost=  factorial_cost[ind] - tasks[skill_factor[ind]].calculate_fitness(new_ind) 
-                evaluations[skill_factor[ind]] += 1
-                if delta_fcost > 0: 
-                    de[skill_factor[ind]].update(delta_fcost) 
-                    population[ind] = new_ind 
-                    factorial_cost[ind]= factorial_cost[ind] - delta_fcost
+        #         delta_fcost=  factorial_cost[ind] - tasks[skill_factor[ind]].calculate_fitness(new_ind) 
+        #         evaluations[skill_factor[ind]] += 1
+        #         if delta_fcost > 0: 
+        #             de[skill_factor[ind]].update(delta_fcost) 
+        #             population[ind] = new_ind 
+        #             factorial_cost[ind]= factorial_cost[ind] - delta_fcost
                  
         #ANCHOR: BAI A THANG 
         # for ind in range(len(population)):
@@ -383,8 +383,8 @@ def lsa_SaMTPSO(tasks, lsa=True):
                         
             
         #ANCHOR: DE :))
-        for d in de: 
-            d.reset() 
+        # for d in de: 
+        #     d.reset() 
 
         
 

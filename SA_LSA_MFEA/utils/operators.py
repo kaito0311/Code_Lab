@@ -1,5 +1,130 @@
-from random import random
+
 import numpy as np 
+
+
+class newSBX():
+    '''
+    pa, pb in [0, 1]^n
+    '''
+    def __init__(self, nb_tasks: int, nc = 15, gamma = .9, alpha = 1, *args, **kwargs):
+        self.nc = nc
+        self.nb_tasks = nb_tasks
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def get_dim_uss(self, dim_uss):
+        self.dim_uss = dim_uss
+        self.prob = np.ones((self.nb_tasks, self.nb_tasks, dim_uss))/2
+        for i in range(self.nb_tasks):
+            self.prob[i, i, :] = 1
+        
+        #nb all offspring bored by crossover at dimensions d by task x task
+        self.count_crossover_each_dimensions = np.zeros((self.nb_tasks, self.nb_tasks, dim_uss))
+        #index off offspring
+        self.epoch_idx_crossover = []
+
+        #nb inds alive after epoch
+        self.success_crossover_each_dimension = np.zeros((self.nb_tasks, self.nb_tasks, dim_uss))
+      
+        self.skf_parent = np.empty((0, 2), dtype= int)
+
+    def update(self, idx_success):
+
+        # sum success crossover
+        for idx in idx_success:
+            self.success_crossover_each_dimension[self.skf_parent[idx][0], self.skf_parent[idx][1]] += self.epoch_idx_crossover[idx]
+
+        # percent success: per_success = success / count
+        per_success = (self.success_crossover_each_dimension / (self.count_crossover_each_dimensions + 1e-10))** (1/self.alpha)
+
+        # new prob
+        new_prob = np.copy(per_success)
+        # prob_succes greater than intra -> p = 1
+        tmp_smaller_intra_change = np.empty_like(self.count_crossover_each_dimensions)
+        for i in range(self.nb_tasks):
+            tmp_smaller_intra_change[i] = (new_prob[i] <= new_prob[i, i])
+        new_prob = np.where(
+            tmp_smaller_intra_change, 
+            new_prob, 
+            1
+        )
+        new_prob = np.where(
+            self.count_crossover_each_dimensions != 0, 
+            new_prob,
+            self.prob
+        )
+
+        # update prob 
+        self.prob = self.prob * self.gamma + (1 - self.gamma) * new_prob
+        self.prob = np.clip(self.prob, 1/self.dim_uss, 1)
+
+        # reset
+        self.count_crossover_each_dimensions = np.zeros((self.nb_tasks, self.nb_tasks, self.dim_uss))
+        self.success_crossover_each_dimension = np.zeros((self.nb_tasks, self.nb_tasks, self.dim_uss))
+        self.epoch_idx_crossover = []
+        self.skf_parent = np.empty((0, 2), dtype= int)
+
+    def __call__(self, pa, pb, skf: tuple[int, int], *args, **kwargs):
+        '''
+        skf = (skf_pa, skf_pb)
+        '''
+
+        self.skf_parent = np.append(self.skf_parent, [[skf[0], skf[1]]], axis = 0)
+        self.skf_parent = np.append(self.skf_parent, [[skf[0], skf[1]]], axis = 0)
+
+        u = np.random.rand(self.dim_uss)    
+        # ~1
+        beta = np.where(u < 0.5, (2*u)**(1/(self.nc +1)), (2 * (1 - u))**(-1 / (1 + self.nc)))
+
+        if skf[0] == skf[1]:
+            idx_crossover = np.ones_like(pa)
+            self.count_crossover_each_dimensions[skf[0], skf[1]] += 2 * idx_crossover
+            self.epoch_idx_crossover.append(idx_crossover)
+            self.epoch_idx_crossover.append(idx_crossover)
+            #like pa
+            c1 = 0.5*((1 + beta) * pa + (1 - beta) * pb)
+            #like pb
+            c2 = 0.5*((1 - beta) * pa + (1 + beta) * pb)
+
+            #swap
+            idx_swap = np.where(np.random.rand(len(pa)) < 0.5)[0]
+            c1[idx_swap], c2[idx_swap] = c2[idx_swap], c1[idx_swap]
+
+        else:
+            idx_crossover = (np.random.rand(self.dim_uss) < self.prob[skf[0], skf[1]])
+            if np.sum(idx_crossover) == 0:
+                idx_crossover[np.random.randint(0, self.dim_uss)] = True
+            self.count_crossover_each_dimensions[skf[0], skf[1]] += 2 * idx_crossover
+            self.epoch_idx_crossover.append(idx_crossover)
+            self.epoch_idx_crossover.append(idx_crossover)
+            #like pa
+            c1 = np.where(idx_crossover, 0.5*((1 + beta) * pa + (1 - beta) * pb), pa)
+            #like pb
+            c2 = np.where(idx_crossover, 0.5*((1 - beta) * pa + (1 + beta) * pb), pa)
+
+            #swap
+            idx_swap = np.where((np.random.rand(len(pa)) < 0.5) * (self.prob[skf[0], skf[1]] > 0.6))
+            c1[idx_swap], c2[idx_swap] = c2[idx_swap], c1[idx_swap]
+
+        c1, c2 = np.clip(c1, 0, 1), np.clip(c2, 0, 1)
+        
+        return c1, c2
+
+def gauss_self_adapt(p):
+    scale= np.zeros_like(p) + np.max(p) * 0.1 
+    ind = np.copy(p)
+    pm = 1/len(ind) 
+    idx_mutation= np.where(np.random.rand(len(ind)) < pm)[0] 
+
+    t = ind[idx_mutation] + np.random.normal(0, scale[idx_mutation], size = len(idx_mutation))
+    
+    t = np.where(t > 1, ind[idx_mutation] + np.random.rand() * (1 - ind[idx_mutation]), t)
+    t = np.where(t < 0, np.random.rand() * ind[idx_mutation], t)
+
+    ind[idx_mutation] = t
+
+    return ind
+    
 
 def sbx_crossover(p1, p2, nc = 2, swap = True):
     SBXDI = nc
@@ -88,7 +213,19 @@ def poly_mutation(p, pmdi=5):
 
 
 
+def gauss_mutation_kien(p, pa, pb, scale, rate= 0.5):
+    ind = np.copy(p)
+    pm = 1/len(ind) 
+    idx_mutation= np.where(np.random.rand(len(ind)) < pm)[0] 
 
+    t = ind[idx_mutation] + np.random.normal(0, scale[idx_mutation], size = len(idx_mutation))
+    
+    t = np.where(t > 1, ind[idx_mutation] + np.random.rand() * (1 - ind[idx_mutation]), t)
+    t = np.where(t < 0, np.random.rand() * ind[idx_mutation], t)
+
+    ind[idx_mutation] = t
+
+    return ind
 
 
 # def sbx_crossover(parent1, parent2):
