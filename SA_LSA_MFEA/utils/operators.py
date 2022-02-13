@@ -39,15 +39,28 @@ class newSBX():
 
         # new prob
         new_prob = np.copy(per_success)
-        # prob_succes greater than intra -> p = 1
-        tmp_smaller_intra_change = np.empty_like(self.count_crossover_each_dimensions)
-        for i in range(self.nb_tasks):
-            tmp_smaller_intra_change[i] = (new_prob[i] <= new_prob[i, i])
-        new_prob = np.where(
-            tmp_smaller_intra_change, 
-            new_prob, 
-            1
-        )
+        # prob_succes greater than intra -> p = 1 # Nếu task hiện tại thích task khác hơn 
+
+        #===============
+            
+    
+
+        # ===============
+        # tmp_smaller_intra_change = np.empty_like(self.count_crossover_each_dimensions)
+        # for i in range(self.nb_tasks):
+        #     tmp_smaller_intra_change[i] = (new_prob[i] <= new_prob[i, i])
+        # new_prob = np.where(
+        #     tmp_smaller_intra_change, 
+        #     new_prob, 
+        #     1
+        # )
+        # for i in range(self.nb_tasks): 
+        #     for j in range(self.dim_uss) :
+        #         a = np.max(new_prob[i,:, j]) 
+        #         if a != 0: 
+        #         # a = np.sum(new_prob[i, :, j]) 
+        #         # new_prob[i, :, j] = (new_prob[i, :, j]) / a 
+        #             new_prob[i, :, j] = new_prob[i, :, j] / a
         new_prob = np.where(
             self.count_crossover_each_dimensions != 0, 
             new_prob,
@@ -72,7 +85,8 @@ class newSBX():
         self.skf_parent = np.append(self.skf_parent, [[skf[0], skf[1]]], axis = 0)
         self.skf_parent = np.append(self.skf_parent, [[skf[0], skf[1]]], axis = 0)
 
-        u = np.random.rand(self.dim_uss)    
+        u = np.random.rand(self.dim_uss)
+        
         # ~1
         beta = np.where(u < 0.5, (2*u)**(1/(self.nc +1)), (2 * (1 - u))**(-1 / (1 + self.nc)))
 
