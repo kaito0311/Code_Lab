@@ -28,7 +28,7 @@ class DE:
         pbest: chon random tu 10% on top 
         pr1, pr2: chon random tu quan the voi task tuong ung thoi 
         '''
-        D = len(pbest)
+        D = len(pbest) - 1
         jrand = np.random.choice(np.arange(D), size = 1) 
         y = np.zeros_like(pbest) 
         k = np.random.choice(np.arange(len(self.Mcr)), size= 1)

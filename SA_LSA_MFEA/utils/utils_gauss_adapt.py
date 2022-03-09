@@ -1,4 +1,6 @@
-import numpy as np 
+import numpy as np
+
+from config import DIMENSIONS 
 
 
 def add_coefficient_gauss(population): 
@@ -12,25 +14,49 @@ def gauss_mutation_self_adap(pa, rate, scale = 0.013):
     #TODO: CONVERT SANG 0.0002 -> 0.2
     if pa[len(pa) - 1] > 0.2: 
         pa[len(pa) - 1] = 0.2 
-    elif pa[len(pa) - 1] <= 0.0002: 
-        pa[len(pa) - 1] = 0.0002
-    converted_scale= pa[len(pa) -1] * (0.2 - 0.0002) / 0.1  + 0.0002
+    elif pa[len(pa) - 1] <= 2e-5: 
+        pa[len(pa) - 1] = 2e-5
+    converted_scale= pa[len(pa) -1] * (0.2 - 2e-5) / 0.1  + 2e-5
     converted_scale = np.random.normal(loc= 0, scale= scale)
     converted_scale = np.abs(converted_scale)
-    converted_scale = np.max(rate[:len(rate) - 1]) * converted_scale 
     ind = np.copy(pa)
-    for i in range(len(pa) -1 ): 
-        if np.random.uniform() < 1/(len(pa) - 1): 
-            t = pa[i] + np.random.normal(loc= 0, scale= converted_scale) 
-            if t > 1: 
-                t = ind[i]  + np.random.rand() * (1- ind[i])
-            elif t < 0: 
-                t = np.random.rand() * ind[i]
-            
-            ind[i] = t 
+    D = DIMENSIONS
+    ind[D] = converted_scale
+    i = int(np.random.choice(np.arange(D), size= 1)) 
+    t = ind[i] +  np.random.normal(scale= converted_scale) 
+
+    if t >1: 
+        t = ind[i] + np.random.rand() * (1- ind[i])
+    elif t < 0: 
+        t = np.random.rand() * ind[i]  
+    
+    ind[i] = t
     
     return ind  
 
+def gauss_base_population(subpopulation, ind, scale = 1): 
+    """
+    subpopulation: subpopulation correspond with task of ind. 
+    ind: ind need mutation
+    """
+    D = len(ind)
+    if D > DIMENSIONS:
+        D = DIMENSIONS  
+
+    p = 1 / D 
+    i = int(np.random.choice(np.arange(D), size= 1)) 
+    mean = np.mean(subpopulation[:, i]) 
+    std = np.std(subpopulation[:, i]) 
+    t = np.random.normal(loc = ind[i], scale= std * scale) 
+    if t >1: 
+        t = ind[i] + np.random.rand() * (1- ind[i])
+    elif t < 0: 
+        t = np.random.rand() * np.abs(ind[i] - mean)  + ind[i]  
+    
+    ind[i] = t 
+    
+    return ind 
+            
 
 
     

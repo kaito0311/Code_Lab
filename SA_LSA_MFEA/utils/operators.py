@@ -151,7 +151,6 @@ def sbx_crossover(p1, p2, nc = 2, swap = True):
 
     c1 = 0.5 * ((1 + cf) * p1 + (1 - cf) * p2)
     c2 = 0.5 * ((1 + cf) * p2 + (1 - cf) * p1)
-
     c1 = np.clip(c1, 0, 1)
     c2 = np.clip(c2, 0, 1)
     if swap is True: 

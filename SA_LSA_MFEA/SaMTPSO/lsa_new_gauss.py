@@ -1,11 +1,12 @@
 
+from dataclasses import replace
 from re import sub
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
 from SaMTPSO.learn_phase import DE, Gauss, learn_phase_task
-from SaMTPSO.memory import Memory_SaMTPSO, gauss_mutation
-from utils.utils_gauss_adapt import add_coefficient_gauss, gauss_mutation_self_adap
+from SaMTPSO.memory import Memory_SaMTPSO, gauss_mutation, gauss_mutation_jam
+from utils.utils_gauss_adapt import add_coefficient_gauss, gauss_base_population, gauss_mutation_self_adap
 from utils.utils_sa_lsa import *
 from config import *
 from tqdm import trange
@@ -57,7 +58,7 @@ def cal_factor_cost(population, tasks, skill_factor):
 
 
 
-def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min_popu= 20):
+def lsa_SaMTPSO_DE_SBX_new_gauss(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min_popu= 20, ti_le_giu_lai = 0.9):
 
     np.random.seed(seed)
 
@@ -101,8 +102,11 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
     block = np.zeros(shape= (len(tasks)), dtype= int)
     ti_le_DE_gauss=np.zeros(shape= (len(tasks)), dtype= float) + 0.5 
     sbx = newSBX(len(tasks), nc = 2, gamma= 0.9, alpha= 6)
-    sbx.get_dim_uss(DIMENSIONS + 1)
+    sbx.get_dim_uss(DIMENSIONS+1)
     ti_le_dung_de = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]) - 0.2
+    #NOTE: new gauss jam: init
+    gauss_mu_jam  = [gauss_mutation_jam() for i in range(len(tasks))] 
+
     while np.sum(evaluations) <= MAXEVALS:
 
         dc_sinh_ra_de = [] 
@@ -121,171 +125,92 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
         index= len(population) 
         number_child_each_task = np.zeros(shape=(len(tasks)), dtype = int)
         delta = [] 
-        while len(childs) < np.sum(current_size_population):
+      
 
-            for task in range(len(tasks)):
-                # if block[task] != 0: 
-                #     continue 
-                while(number_child_each_task[task] < current_size_population[task]):
-                    # random de chon task nao de giao phoi 
-                    task2 = None 
-                    index_pa= int(np.random.choice(np.where(skill_factor == task)[0], size= 1))
-                    
-                    # index_pa = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task]))[0]) & set(np.where(skill_factor == task)[0])))), size= (1)))
-                    index_pb = index_pa 
-                    # if memory_task[task].isFocus == False: 
-                    if True:
-                        task2 = np.random.choice(np.arange(len(tasks)), p= p_matrix[task]) 
-                        while index_pa == index_pb:
-                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(1.0 * current_size_population[task2]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
-                            # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
-                    else: 
-                        task2 = task 
-                        while index_pa == index_pb:
-                            # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
-                            index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.25 * current_size_population[task]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
-                    
-                    # CHỌN CHA MẸ # TRONG BÀI BÁO LÀ CHỌN CON KHỎE NHẤT. 
-                    # CROSSOVER 
-                    skf_oa = skf_ob= task
-                    # NOTE: NEW SBX CODE KIEN 
-                    # if scalar_fitness[index_pa] < scalar_fitness[index_pb] and task == task2: 
-                    #     index_pa, index_pb = index_pb, index_pa 
-
-                    # if task == task2 and np.random.rand() < ti_le_dung_de[task]: 
-                    #     if np.random.rand() <= 1.0: 
-                    #         ind = index_pa
-                    #         pbest = pr1 = pr2= index_pa
-                    #         while pbest == index_pa or pr1 == index_pa or pr2 == index_pa: 
-                    #             pbest= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.1 * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
-                    #             pr1 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
-                    #             pr2 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
-
-                    #         new_ind = de[skill_factor[ind]].DE_cross(population[ind], population[pbest], population[pr1], population[pr2])
-
-                    #         delta_fcost =  factorial_cost[ind] - tasks[skill_factor[ind]].calculate_fitness(new_ind) 
-                            
-                    #         de[skill_factor[ind]].update(delta_fcost) 
-                    #         oa = np.copy(new_ind)
-    
-                    #         ind = index_pb
-                    #         while pbest == index_pb or pr1 == index_pb or pr2 == index_pb: 
-                    #             pbest= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.1 * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
-                    #             pr1 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
-                    #             pr2 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
-
-
-                    #         new_ind = de[skill_factor[ind]].DE_cross(population[ind], population[pbest], population[pr1], population[pr2])
-                    #         delta_fcost=  factorial_cost[ind] - tasks[skill_factor[ind]].calculate_fitness(new_ind) 
+        for task in range(len(tasks)):
+            # if block[task] != 0: 
+            #     continue 
+            # if len(history_cost) > 2 and  history_cost[len(history_cost) - 1][task].cost == 0.0: 
+            #     continue 
+            while(number_child_each_task[task] < current_size_population[task]):
+                # random de chon task nao de giao phoi 
+                task2 = None 
+                index_pa= int(np.random.choice(np.where(skill_factor == task)[0], size= 1))
                 
-                    #         de[skill_factor[ind]].update(delta_fcost)
-                    #         ob = np.copy(new_ind)
-                    #         dc_sinh_ra_de.append(True)
-                    #         dc_sinh_ra_de.append(True)
+                # index_pa = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task]))[0]) & set(np.where(skill_factor == task)[0])))), size= (1)))
+                index_pb = index_pa 
+                task2 = np.random.choice(np.arange(len(tasks)), p= p_matrix[task])
+                # while index_pa == index_pb:  
+                #     index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size = 1))
+                while index_pb == index_pa : 
+                    index_for_pb= np.random.choice(np.where(skill_factor == task2)[0], size= (2,), replace= False)
+                    if factorial_cost[index_for_pb[0]] < factorial_cost[index_for_pb[1]]:
+                        index_pb = int(index_for_pb[0]) 
+                    else: 
+                        index_pb = int(index_for_pb[1]) 
 
-                            
-                    # else:
-                    #     oa, ob = sbx(population[index_pa], population[index_pb], (task, task2))
-                    #     dc_sinh_ra_de.append(False)
-                    #     dc_sinh_ra_de.append(False)
-                    oa, ob = sbx(population[index_pa], population[index_pb], (task, task2))
+                # if memory_task[task].isFocus == False: 
+                # if True:
+                #     task2 = np.random.choice(np.arange(len(tasks)), p= p_matrix[task]) 
+                #     while index_pa == index_pb:
+                #         index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(1.0 * current_size_population[task2]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
+                #         # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
+                # else: 
+                #     task2 = task 
+                #     while index_pa == index_pb:
+                #         # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
+                #         index_pb = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.25 * current_size_population[task]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
+                
+                # CHỌN CHA MẸ # TRONG BÀI BÁO LÀ CHỌN CON KHỎE NHẤT. 
+                # CROSSOVER 
+                skf_oa = skf_ob= task
+                # oa, ob = sbx(population[index_pa], population[index_pb], (task, task2))
+                if task == task2: 
+                    oa, ob = sbx_crossover(population[index_pa], population[index_pb], swap= True)
+                else: 
+                    oa, ob = sbx_crossover(population[index_pa], population[index_pb], swap= False)
+
+                # oa = gauss_base_population(population[np.where(skill_factor == task)[0]], oa) 
+                # ob = gauss_base_population(population[np.where(skill_factor == task)[0]], ob) 
+                # #NOTE: new gauss jam: mutation 
+                # if task == task2: 
+                #     oa, _ = gauss_mu_jam[skf_oa].mutation(oa, population[np.where(skill_factor == skf_oa)[0]], skf_oa)
+                #     ob, _ = gauss_mu_jam[skf_ob].mutation(ob, population[np.where(skill_factor == skf_ob)[0]], skf_ob)
                     
-                   
-                    # if task == task2: 
-                    #     # if factorial_cost[index_pa] > factorial_cost[index_pb]:
-                    #     #     index_pa, index_pb = index_pb, index_pa
-                    #     oa, ob = sbx_crossover(population[index_pa], population[index_pb],swap=True)
-                    #     pa_mutation = int(np.random.choice(np.where(skill_factor == task)[0], size= 1))
-                    #     pb_mutation = pa_mutation
-                    #     while pb_mutation == pa_mutation:
-                    #         pb_mutation = int(np.random.choice(np.where(skill_factor == task)[0], size= 1))
-                    #         # pb_mutation = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.25 * current_size_population[task]))[0]) & set(np.where(skill_factor == task)[0])))), size= (1)))
-                    #     scale = np.abs(population[pa_mutation] - population[pb_mutation]) 
-                    #     # oa = gauss_mutation_kien(oa, population[pa_mutation], population[pb_mutation], scale)
-                    #     # ob = gauss_mutation_kien(ob, population[pa_mutation], population[pb_mutation], scale)
-                    
-
-                    #     # oa = gauss_mutation_self_adap(oa,rate= scale)
-                    #     # ob = gauss_mutation_self_adap(ob, rate= scale) 
-                    # else: 
-                    #     oa, ob = sbx_crossover(population[index_pa], population[index_pb],swap=False)
-                    #     # if np.random.uniform() > p_matrix[task][task2]:
-                    #     #     index_pc=index_pb
-                    #     #     while index_pa == index_pc or index_pb == index_pc:
-                    #     #     # index_pb = int(np.random.choice(np.where(skill_factor == task2)[0], size= 1))
-                    #     #         index_pc = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
-                    #     #     ob, _ = sbx_crossover(population[index_pa], population[index_pc], swap= False)
-                    #     # ob = mutation[skf_ob].mutation(population[index_pa])
-                    
-                    # #ANCHOR: MUTATION
-                    # oa = mutation[skf_oa].mutation(oa)
-                    # ob = mutation[skf_ob].mutation(ob)
-
-                    # oa = gauss_self_adapt(oa)
-                    # ob = gauss_self_adapt(ob)
-
-                    # pa_mutation = int(np.random.choice(np.where(skill_factor == task)[0], size= 1))
-                    # pb_mutation = pa_mutation
-                    # while pb_mutation == pa_mutation:
-                    #     pb_mutation = int(np.random.choice(np.where(skill_factor == task)[0], size= 1))
-                    #     # pb_mutation = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.25 * current_size_population[task]))[0]) & set(np.where(skill_factor == task)[0])))), size= (1)))
-                    # scale = np.abs(population[pa_mutation] - population[pb_mutation]) 
-                    # oa = gauss_mutation_kien(oa, population[pa_mutation], population[pb_mutation], scale)
-                    # ob = gauss_mutation_kien(ob, population[pa_mutation], population[pb_mutation], scale)
-                    
-
-                    # oa = gauss_mutation_self_adap(oa,rate= scale)
-                    # ob = gauss_mutation_self_adap(ob, rate= scale) 
 
             
+                fcost_oa = tasks[skf_oa].calculate_fitness(oa)
+                fcost_ob = tasks[skf_ob].calculate_fitness(ob) 
+
+                # tinh phan tram cai thien 
+                delta_oa = (factorial_cost[index_pa] - fcost_oa) / (factorial_cost[index_pa] + 1e-10)
+                delta_ob = (factorial_cost[index_pa] - fcost_ob) / (factorial_cost[index_pa] + 1e-10) 
+
+                delta.append(delta_oa)
+                delta.append(delta_ob) 
+
+                skill_factor_childs.append(skf_oa) 
+                skill_factor_childs.append(skf_ob) 
+
+                factorial_cost_childs.append(fcost_oa) 
+                factorial_cost_childs.append(fcost_ob) 
+
+                childs.append(oa) 
+                childs.append(ob) 
+
+
                 
-                    fcost_oa = tasks[skf_oa].calculate_fitness(oa)
-                    fcost_ob = tasks[skf_ob].calculate_fitness(ob) 
+                index_child_each_tasks.append(index)
+                index_child_each_tasks.append(index + 1) 
 
-                    # tinh phan tram cai thien 
-                    delta_oa = (factorial_cost[index_pa] - fcost_oa) / (factorial_cost[index_pa] + 1e-10)
-                    delta_ob = (factorial_cost[index_pa] - fcost_ob) / (factorial_cost[index_pa] + 1e-10) 
+                task_partner.append(task2) 
+                task_partner.append(task2) 
 
-
-
-        
-                    # if task2 == task: 
-                    #     delta_oa = max(delta_oa, (factorial_cost[index_pb] - fcost_oa) / (factorial_cost[index_pb] + 1e-10)) 
-                    #     delta_ob = max(delta_ob, (factorial_cost[index_pb] - fcost_ob)/ (factorial_cost[index_pb] + 1e-10))
-
-                    # if delta_oa > 0 or delta_ob > 0: 
-                    #     if delta_oa >= delta_ob : 
-                    #         # swap 
-                    #         population[index_pa], oa = oa, population[index_pa]
-                    #         fcost_oa, factorial_cost[index_pa] = factorial_cost[index_pa], fcost_oa
-                    #     if delta_ob > delta_oa: 
-                    #         population[index_pa], ob = ob, population[index_pa]
-                    #         fcost_ob, factorial_cost[index_pa] = factorial_cost[index_pa], fcost_ob
-
-                    delta.append(delta_oa)
-                    delta.append(delta_ob) 
-
-                    skill_factor_childs.append(skf_oa) 
-                    skill_factor_childs.append(skf_ob) 
-
-                    factorial_cost_childs.append(fcost_oa) 
-                    factorial_cost_childs.append(fcost_ob) 
-
-                    childs.append(oa) 
-                    childs.append(ob) 
-
-
-                    
-                    index_child_each_tasks.append(index)
-                    index_child_each_tasks.append(index + 1) 
-                    task_partner.append(task2) 
-                    task_partner.append(task2) 
-
-                    number_child_each_task[task] += 2 
-                    evaluations[task] += 2
-                    index += 2 
-        
+                number_child_each_task[task] += 2 
+                evaluations[task] += 2
+                index += 2 
     
+
 
 
         if lsa is True:
@@ -297,8 +222,7 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
                 initial_size_population,
                 min_size_population,
             )
-        # for task in range(len(tasks)):
-        #     index_child_each_tasks[task] += len(population) 
+     
         population = np.concatenate([population, np.array(childs)])
         skill_factor = np.concatenate([skill_factor, np.array(skill_factor_childs)])
         factorial_cost = np.concatenate(
@@ -312,50 +236,44 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
         assert len(population) == len(factorial_cost)
 
         #
-        delete_index = []
+        delete_index = [[] for i in range(len(tasks))]
         choose_index = [] 
         index_child_success = [] 
         index_child_fail = [] 
         delta_improvment = [] 
         delta_decrease = [] 
+        nb_choosed_each_tasks = np.zeros(shape= (len(tasks),), dtype= int)
         for ind in range(len(population)):
-            # if ind >= index_child_each_tasks[0]: 
-            #     if delta[ind-index_child_each_tasks[0]] >= 0: 
-            #         index_child_success.append(ind-index_child_each_tasks[0])
-            if(scalar_fitness[ind]) < 1.0 / current_size_population[skill_factor[ind]]:
-                delete_index.append(ind) 
-                if ind >= index_child_each_tasks[0]:
-                    task1 = skill_factor[ind] 
-                    task2 = task_partner[ind - index_child_each_tasks[0]]
-
-                    # #NOTE:  cho new sbx fail and success 
-                    # index_child_fail.append(ind - index_child_each_tasks[0])
-                    # delta_decrease.append(delta[ind-index_child_each_tasks[0]])
-                    
-                    delta[ind-index_child_each_tasks[0]] = 1 
-
-                    memory_task[task1].update_history_memory(task2, delta[ind-index_child_each_tasks[0]], success=False)
+      
+            if(scalar_fitness[ind]) < 1.0 / (current_size_population[skill_factor[ind]] * ti_le_giu_lai) :
+                delete_index[skill_factor[ind]].append(ind) 
             else: 
                 choose_index.append(ind)
-                if ind >= index_child_each_tasks[0]:
-                    task1 = skill_factor[ind]
-                    task2 = task_partner[ind - index_child_each_tasks[0]]
+                nb_choosed_each_tasks[skill_factor[ind]] += 1 
+               
+            if ind >= index_child_each_tasks[0] : 
+                task1 = skill_factor[ind]
+                task2 = task_partner[ind - index_child_each_tasks[0]]
 
-                    #NOTE: cho new sbx fail and success
-                    # if dc_sinh_ra_de[ind - index_child_each_tasks[0]] is False: 
-                    #     index_child_success.append(ind - index_child_each_tasks[0]- len(np.where(np.array(dc_sinh_ra_de[:(ind - index_child_each_tasks[0])]) == 1)[0]))
+                if scalar_fitness[ind] < 1.0 / current_size_population[skill_factor[ind]]: 
+                    memory_task[task1].update_history_memory(task2, 1, success= False)
+                else: 
                     index_child_success.append(ind- index_child_each_tasks[0])
-                    # delta_improvment.append(delta[ind-index_child_each_tasks[0]]) 
+                    memory_task[task1].update_history_memory(task2, 1, success= True) 
 
-                    delta[ind-index_child_each_tasks[0]] = 1 
-                    memory_task[task1].update_history_memory(task2, delta[ind-index_child_each_tasks[0]], success=True)
+
+        if ti_le_giu_lai < 1.0 : 
+            for i in range(len(tasks)):
+            # while nb_choosed_each_tasks[i] < current_size_population[i]:
+                    # chọn random từ đống kia 1 vài con 
+                choose_index = np.concatenate([np.array(choose_index),np.random.choice(delete_index[i], size= int(current_size_population[i] - nb_choosed_each_tasks[i]), replace = False)])
                     
         # Tính toán lại ma trận prob 
         for task in range(len(tasks)):
             p = np.copy(memory_task[task].compute_prob())
             assert p_matrix[task].shape == p.shape
-            # p_matrix[task] = p_matrix[task] * 0.9 + p * 0.1
-            p_matrix[task] = p 
+            p_matrix[task] = p_matrix[task] * 0.8 + p * 0.2
+            # p_matrix[task] = p 
 
 
 
@@ -370,7 +288,7 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
         assert len(population) == np.sum(current_size_population)
 
         #NOTE: UPDATE SBX CODE KIEN 
-        sbx.update(index_child_success)
+        # sbx.update(index_child_success)
         # sbx.update_success_fail(index_child_success, delta_improvment, index_child_fail, delta_decrease, c=2)
 
         index_population_tasks = [[] for i in range(len(tasks))]
@@ -381,64 +299,67 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
       
         
 
-        xsuat_lay = 0
+        # xsuat_lay = 0
         # # ANCHOR: learn phase DE
         # for subpop in range(len(tasks)):
+        #     # if gauss_mu_jam[subpop].is_jam:
+        #     #     continue 
         #     count_mutation = 0; 
         #     count_de = 0; 
         #     danh_gia_DE = 0 
         #     danh_gia_Gauss= 0 
             
-        #     if block[task] != 0:
-        #         continue
         #     # for ind in np.random.shuffle(index_population_tasks[subpop])[:int(len(index_child_each_tasks[subpop]))]:
-        #     max_f = np.max(factorial_cost[index_population_tasks[subpop]])
-        #     min_f = np.min(factorial_cost[index_population_tasks[subpop]])
+        #     max_f = np.max(factorial_cost[np.array(list((set(np.where(scalar_fitness >= 1/(ti_le_giu_lai * current_size_population[subpop]))[0]) & set(np.where(skill_factor == subpop)[0]))))])
+        #     min_f = np.min(factorial_cost[np.array(list((set(np.where(scalar_fitness >= 1/(ti_le_giu_lai * current_size_population[subpop]))[0]) & set(np.where(skill_factor == subpop)[0]))))])
+        #     # min_f = np.min(factorial_cost[index_population_tasks[subpop]])
         #     np.random.shuffle(index_population_tasks[subpop])
        
         #     for ind in index_population_tasks[subpop][:int(len(index_population_tasks[subpop])/2)]:
-        #         # if np.random.uniform() <ti_le_DE_gauss[subpop]:
-        #         if np.random.uniform() < 1.0:
-        #             pbest= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.1 * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
-        #             pr1 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
-        #             pr2 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
+        #         # if np.random.uniform() <ti_le_DE_gauss[subpop] and gauss_mu_jam[subpop].is_jam is False:
+        #         if np.random.uniform() < 1.1:
+
+        #             pbest = pr1 = pr2 = -1 
+                   
+        #             while pbest == pr1 or pr1 == pr2: 
+        #                 pbest= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.1 * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
+        #                 pr1= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(ti_le_giu_lai * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
+        #                 pr2= int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(ti_le_giu_lai * current_size_population[skill_factor[ind]]))[0]) & set(np.where(skill_factor == skill_factor[ind])[0])))), size= (1)))
+              
+        #             # pr1 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
+        #             # pr2 = int(np.random.choice(np.where(skill_factor == skill_factor[ind])[0], size= 1))
+        #             # pr1 = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.5 * current_size_population[task2]))[0]) & set(np.where(skill_factor == task2)[0])))), size= (1)))
 
         #             new_ind = de[skill_factor[ind]].DE_cross(population[ind], population[pbest], population[pr1], population[pr2])
 
-        #             delta_fcost=  factorial_cost[ind] - tasks[skill_factor[ind]].calculate_fitness(new_ind) 
+        #             new_fcost = tasks[skill_factor[ind]].calculate_fitness(new_ind) 
+        #             delta_fcost = factorial_cost[ind] - new_fcost
         #             evaluations[skill_factor[ind]] += 1
         #             # xsuat_lay =  (1/mutation[skill_factor[ind]].tiso) * np.exp(delta_fcost /(max_f - min_f))
         #             # if delta_fcost > 0 : 
         #             danh_gia_DE += 1
-        #             if delta_fcost > 0 : 
+        #             if (delta_fcost >=0 and factorial_cost[ind] > 0) or  (min_f > 0 and scalar_fitness[ind] < 1/(0.5* current_size_population[skill_factor[ind]]) and np.random.rand() < min_f / new_fcost ): 
         #             # if delta_fcost > 0 : 
-        #                 count_de += 1
         #                 if delta_fcost != 0:
+        #                     count_de += 1       
         #                     de[skill_factor[ind]].update(delta_fcost) 
         #                 population[ind] = new_ind 
         #                 factorial_cost[ind]= factorial_cost[ind] - delta_fcost
                     
         #         else: 
-        #             # new_ind = gauss_self_adapt(population[ind])
-        #             pa_mutation = int(np.random.choice(np.where(skill_factor == subpop)[0], size= 1))
-        #             pb_mutation = pa_mutation
-        #             while pb_mutation == pa_mutation:
-        #                 pb_mutation = int(np.random.choice(np.where(skill_factor == subpop)[0], size= 1))
-        #                 # pb_mutation = int(np.random.choice(np.array(list((set(np.where(scalar_fitness >= 1/(0.25 * current_size_population[task]))[0]) & set(np.where(skill_factor == task)[0])))), size= (1)))
-        #             scale = np.abs(population[pa_mutation] - population[pb_mutation]) 
-        #             # new_ind = gauss_mutation_kien(population[ind], population[pa_mutation], population[pb_mutation], scale)
-        #             # new_ind = mutation[subpop].mutation(population[ind])
-
-        #             new_ind = gauss_mutation_self_adap(population[ind], rate = scale)
+        #             (new_ind, std) = gauss_mu_jam[skill_factor[ind]].mutation(population[ind], population[np.where(skill_factor == subpop)[0]])
         #             danh_gia_Gauss += 1
-        #             delta_fcost = factorial_cost[ind] - tasks[skill_factor[ind]].calculate_fitness(new_ind) 
+        #             new_fcost = tasks[skill_factor[ind]].calculate_fitness(new_ind) 
+        #             delta_fcost = factorial_cost[ind] - new_fcost
         #             evaluations[skill_factor[ind]] += 1
         #             # xsuat_lay =  (1/mutation[skill_factor[ind]].tiso) * np.exp(delta_fcost /(max_f - min_f))
-        #             if delta_fcost >=0 : 
+        #             if (delta_fcost >=0 and factorial_cost[ind] > 0) or (min_f > 0 and scalar_fitness[ind] < 1/(0.5* current_size_population[skill_factor[ind]]) and np.random.rand() < min_f / new_fcost) or std == 0: 
         #                 # de[skill_factor[ind]].update(delta_fcost) 
-        #                 count_mutation += 1
+        #                 if delta_fcost > 0 and factorial_cost[ind] > 0:
+        #                     count_mutation += 1 
+        #                 # count_mutation += delta_fcost / factorial_cost[ind]
         #                 population[ind] = new_ind 
-        #                 factorial_cost[ind]= factorial_cost[ind] - delta_fcost
+        #                 factorial_cost[ind]= new_fcost
 
 
         #     if danh_gia_DE> 0 and danh_gia_Gauss > 0:
@@ -447,15 +368,14 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
         #         if a== b and a == 0: 
         #             ti_le_DE_gauss[subpop] -= (ti_le_DE_gauss[subpop] - 0.5) * 0.2
         #         else: 
-        #             x= np.max([a / (a + b), 0.05]) 
-        #             x= np.min([x, 0.95]) 
+        #             x= np.max([a / (a + b), 0.2]) 
+        #             x= np.min([x, 0.8]) 
         #             ti_le_DE_gauss[subpop] = ti_le_DE_gauss[subpop]* 0.5+ x * 0.5 
                     
             
-        #ANCHOR: UPDATE DE :))
-        for d in de: 
-            d.reset()
-        # ti_le_dung_de += 0.3 / 1000 
+        # # ANCHOR: UPDATE DE :))
+        # for d in de: 
+        #     d.reset()
 
 
 
@@ -465,21 +385,26 @@ def lsa_SaMTPSO_DE_SBX(tasks, lsa=True, seed = 1, rate= 0.5, max_popu = 100, min
             results = optimize_result(population, skill_factor, factorial_cost, tasks)
             history_cost.append(results)
 
-            #ANCHOR: Update Mutation
-            # end = len(history_cost) -1 
-            # for i in range(len(tasks)):
-            #     # mutation[i].update_scale_base_population(population, i, skill_factor, scalar_fitness, factorial_cost)
-            #     mutation[i].update_scale(history_cost[end][i].ind, history_cost[end -1][i].ind, history_cost[end][i].cost)
-                    
-            history_p_matrix.append(np.copy(p_matrix))
+            #NOTE: new gauss jam: update 
+            end = len(history_cost) -1 
+            for i in range(len(tasks)):
+                gauss_mu_jam[i].update_scale(history_cost[end][i].cost) 
 
+
+            history_p_matrix.append(np.copy(p_matrix))
+            sys.stdout.flush()
             sys.stdout.write("\r")
+            from time import sleep
+            
             sys.stdout.write(
                 "Epoch {}, [%-20s] %3d%% ,pop_size: {},count_de: {},  func_val: {}".format(
                     int(evaluations[0] / 100) + 1,
                     len(population),
                     # [ti_le_DE_gauss[i] for i in range(len(tasks))],
-                    [i for i in ti_le_dung_de],
+                    [evaluations[i] for i in range(len(tasks))],
+                    # [gauss_mu_jam[i].is_jam for i in range(len(tasks))],
+                    # [gauss_mu_jam[i].curr_diversity for i in range(len(tasks))],
+                    # [i for i in ti_le_dung_de],
                     # count_mutation,
                     # [memory_task[9].success_history[i][memory_task[9].next_position_update-1] for i in range(len(tasks))],
                     # [mutation[i].jam for i in range(NUMBER_TASKS)],

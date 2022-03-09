@@ -64,7 +64,7 @@ def lsa_SaMTPSO(tasks, lsa=True):
 
     initial_size_population = np.zeros((NUMBER_TASKS), dtype=int) + 100
     current_size_population = np.copy(initial_size_population)
-    min_size_population = np.zeros((NUMBER_TASKS), dtype=int) + 20
+    min_size_population = np.zeros((NUMBER_TASKS), dtype=int) + 50
 
     evaluations = np.zeros((NUMBER_TASKS), dtype=int)
     maxEvals = np.zeros_like(evaluations, dtype=int) + int(MAXEVALS / NUMBER_TASKS)
